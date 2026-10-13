@@ -31,6 +31,7 @@ export const NAV = [
       { title: 'Liked Songs', page: 'features/liked-songs.md' },
       { title: 'Podcasts', page: 'features/podcasts.md' },
       { title: 'Discover', page: 'features/discover.md' },
+      { title: 'Mixes', page: 'features/mixes.md' },
       { title: 'Users & Sign-in', page: 'features/users.md' },
       { title: 'Mobile Apps', page: 'features/mobile-apps.md' },
       { title: 'Server Settings', page: 'features/server.md' },

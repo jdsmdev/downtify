@@ -32,6 +32,7 @@ export default {
     podcasts: 'Podcasts',
     charts: 'Listas de éxitos',
     similar: 'Similares',
+    mixes: 'Mixes',
     settings: 'Ajustes',
     more: 'Más',
     playlists: 'Playlists',
@@ -89,6 +90,7 @@ export default {
       playlist: 'Playlist',
       artist: 'Artista',
       library: 'Biblioteca',
+      mix: 'Mix',
     },
     step1Title: 'Encuentra música',
     step1Body:
@@ -585,6 +587,7 @@ export default {
       search: 'Reproduciendo de la búsqueda',
 
       podcast: 'Reproduciendo del podcast',
+      mix: 'Reproduciendo del mix',
     },
     goToAlbum: 'Álbum',
     goToArtist: 'Artista',
@@ -1334,6 +1337,44 @@ export default {
       'No se pudieron cargar los álbumes y playlists ahora. Inténtalo más tarde.',
     poweredBy:
       'Los artistas vienen de los artistas similares de Deezer; los álbumes, de Deezer y Spotify; las playlists, de cada uno.',
+  },
+  mixes: {
+    title: 'Hecho para ti',
+    subtitle:
+      'Listas creadas a partir de lo que escuchas, al día con lo que suena.',
+    kicker: 'Mix',
+    failed: 'No se pudieron cargar tus mixes',
+    howItWorks:
+      'Una canción cuenta como escuchada cuando ha sonado la mitad (o cuatro minutos). Tus mixes son solo tuyos.',
+    saveAsPlaylist: 'Guardar como lista',
+    emptyTitle: 'Aún no hay nada',
+    newBecause: 'Porque has estado escuchando {names}',
+    on_repeat: {
+      title: 'En bucle',
+      short: 'Lo que más escuchas últimamente',
+      body: 'Las canciones que más has escuchado en los últimos 30 días.',
+      empty: 'Escucha canciones de tu biblioteca y aparecerán aquí.',
+    },
+    forgotten: {
+      title: 'Favoritas olvidadas',
+      short: 'Canciones que te encantaban, sin escuchar',
+      body: 'Canciones que escuchaste mucho (o que te gustan) pero no has oído en dos meses.',
+      empty:
+        'Aquí aparecen las canciones que escuchaste mucho pero no has oído en dos meses.',
+    },
+    unplayed: {
+      title: 'Nunca escuchadas',
+      short: 'Canciones de tu biblioteca aún sin escuchar',
+      body: 'Canciones de tu biblioteca que nunca has escuchado, de los artistas que más escuchas. Una selección nueva cada día.',
+      empty: 'Has escuchado todas las canciones de tu biblioteca.',
+    },
+    new: {
+      title: 'Novedades para ti',
+      short: 'Canciones que aún no tienes',
+      body: 'Canciones que aún no tienes, parecidas a las que más escuchas, de YouTube Music.',
+      empty:
+        'Escucha primero algunas canciones de tu biblioteca: este mix se basa en tus favoritas.',
+    },
   },
   podcasts: {
     title: 'Podcasts',

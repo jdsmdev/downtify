@@ -600,8 +600,17 @@ function getDiscoverSpotifyCollections(payload) {
   return API.post('/api/discover/collections/spotify', payload)
 }
 
-function recordListen(artist) {
-  return API.post('/api/discover/listens', { artist })
+function recordListen(artist, file = '') {
+  return API.post('/api/discover/listens', file ? { artist, file } : { artist })
+}
+
+// Playlists built from what the user plays - see downtify/mixes.py.
+function getMixes() {
+  return API.get('/api/mixes')
+}
+
+function getNewForYou() {
+  return API.get('/api/mixes/new')
 }
 
 function clearListens() {
@@ -866,6 +875,8 @@ export default {
   getDiscoverSpotifyCollections,
   findPreview,
   recordListen,
+  getMixes,
+  getNewForYou,
   clearListens,
   getBlockedArtists,
   blockArtist,

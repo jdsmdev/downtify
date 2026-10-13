@@ -240,9 +240,16 @@ for downloads stay shared, and files are never stored twice.
   rest ``'spotify'``; playlists are only Spotify's "This Is <artist>"),
   ``POST|DELETE
   /api/discover/listens`` (count
-  one listen to an artist - body ``{artist}`` - or forget them all) and
+  one listen to an artist - body ``{artist}``, plus ``file`` (the
+  library path played) to log it for the mixes - or forget them all) and
   ``GET|POST|DELETE /api/discover/blocked`` (artists never to suggest -
   ``POST`` body ``{name}``, ``DELETE`` takes ``?name=``)
+* ``GET  /api/mixes`` (playlists built from what the user plays -
+  ``{mixes: [{id, tracks}]}``, ids ``on_repeat``, ``forgotten``,
+  ``unplayed``, tracks in the ``GET /tracks`` shape) and ``GET
+  /api/mixes/new`` (songs not in the library like the user's current
+  favourites - ``{seeds: [{artist, title}], tracks, partial}``, tracks
+  as in ``GET /api/similar/tracks``) - see ``downtify.mixes``
  * ``GET  /api/preview`` (a song's 30 s preview clip from Deezer, for a
    song with no ``preview_url`` of its own - ``?artist=&title=&duration=``,
    response ``{preview_url}``, ``""`` when Deezer has no matching song)
@@ -329,6 +336,7 @@ from . import (
     library_upgrade,
     lyrics,
     m3u,
+    mixes,
     providers,
     spotify,
     stream,
@@ -6989,16 +6997,22 @@ async def record_listen_endpoint(request: Request) -> dict[str, Any]:
     An app may also send ``track_id`` instead of ``artist`` (the track's
     album artist is used), ``played_at`` (ISO 8601, for plays it reports
     after being offline; a future time counts as now) and ``play_id``
-    (the same play reported twice counts once).
+    (the same play reported twice counts once). ``file`` (the library
+    path played; implied by ``track_id``) also logs the play for the
+    mixes (``GET /api/mixes``).
     """
 
     store = _require_discover()
     payload = await _json_object(request)
     artist = str(payload.get('artist') or '')
     track_id = str(payload.get('track_id') or '')
-    if not artist and track_id and state.library_sync is not None:
+    file = str(payload.get('file') or '').strip().replace('\\', '/')
+    if track_id and state.library_sync is not None:
         row = await asyncio.to_thread(state.library_sync.row_for, track_id)
-        artist = str((row or {}).get('album_artist') or '')
+        artist = artist or str((row or {}).get('album_artist') or '')
+        file = file or str((row or {}).get('file') or '')
+    if file and resolve_library_file(file, library_context()) is None:
+        file = ''
     when = _played_at(payload.get('played_at'))
     row = await asyncio.to_thread(
         store.record_listen,
@@ -7006,10 +7020,59 @@ async def record_listen_endpoint(request: Request) -> dict[str, Any]:
         when,
         str(payload.get('play_id') or '').strip(),
         request_user_id(request),
+        file,
     )
     if row is None:
         raise HTTPException(status_code=400, detail='artist is required')
     return row
+
+
+def _mix_inputs(
+    request: Request,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], int]:
+    """``(library rows, play log, user id)`` for *request*'s mixes."""
+
+    store = _require_discover()
+    user_id = request_user_id(request)
+    entries = listing_for_request(
+        library_context(), allowed_keys=allowed_entry_keys(request)
+    )
+    return entries, store.track_plays(user_id), user_id
+
+
+@router.get('/api/mixes')
+async def mixes_endpoint(request: Request) -> dict[str, Any]:
+    """Playlists built from what the user plays (see ``downtify.mixes``):
+    ``on_repeat``, ``forgotten`` and ``unplayed``, each
+    ``{id, tracks}`` with library rows. Worked out on every request, so
+    they always follow the latest listens."""
+
+    entries, plays, user_id = await asyncio.to_thread(_mix_inputs, request)
+    liked: list[str] = []
+    if state.likes is not None:
+        liked = await asyncio.to_thread(state.likes.paths, user_id)
+    built = await asyncio.to_thread(mixes.build_mixes, entries, plays, liked)
+    return {'mixes': built}
+
+
+@router.get('/api/mixes/new')
+async def new_for_you_endpoint(request: Request) -> dict[str, Any]:
+    """Songs that aren't in the library, like the user's current
+    favourites - YouTube Music's radio mix of the top "On repeat" songs
+    (see ``downtify.mixes.new_for_you``). ``seeds`` is empty (and so is
+    ``tracks``) until something has been played."""
+
+    entries, plays, _user_id = await asyncio.to_thread(_mix_inputs, request)
+    seeds = mixes.new_seeds(entries, plays)
+    if not seeds:
+        return {'seeds': [], 'tracks': [], 'partial': False}
+
+    def similar(artist: str, title: str) -> dict[str, Any]:
+        return providers.youtube_similar_tracks(
+            artist, title, limit=mixes.NEW_PER_SEED
+        )
+
+    return await asyncio.to_thread(mixes.new_for_you, seeds, entries, similar)
 
 
 def _played_at(value: Any) -> Optional[datetime]:

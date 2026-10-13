@@ -32,6 +32,7 @@ export default {
     podcasts: 'Podcasts',
     charts: 'Paradas de sucesso',
     similar: 'Similares',
+    mixes: 'Mixes',
     settings: 'Configurações',
     more: 'Mais',
     playlists: 'Playlists',
@@ -92,6 +93,7 @@ export default {
       playlist: 'Playlist',
       artist: 'Artista',
       library: 'Biblioteca',
+      mix: 'Mix',
     },
     step1Title: 'Encontre músicas',
     step1Body:
@@ -582,6 +584,7 @@ export default {
       search: 'Tocando da busca',
 
       podcast: 'Tocando do podcast',
+      mix: 'Tocando do mix',
     },
     goToAlbum: 'Álbum',
     goToArtist: 'Artista',
@@ -1325,6 +1328,44 @@ export default {
       'Não foi possível carregar álbuns e playlists agora. Tente novamente mais tarde.',
     poweredBy:
       'Os artistas vêm dos artistas semelhantes do Deezer; os álbuns, do Deezer e do Spotify; as playlists, de cada um.',
+  },
+  mixes: {
+    title: 'Feito para você',
+    subtitle:
+      'Playlists criadas a partir do que você ouve, sempre atualizadas.',
+    kicker: 'Mix',
+    failed: 'Não foi possível carregar seus mixes',
+    howItWorks:
+      'Uma música conta como ouvida quando metade dela (ou quatro minutos) tocou. Seus mixes são só seus.',
+    saveAsPlaylist: 'Salvar como playlist',
+    emptyTitle: 'Nada aqui ainda',
+    newBecause: 'Porque você tem ouvido {names}',
+    on_repeat: {
+      title: 'No repeat',
+      short: 'O que você mais ouve ultimamente',
+      body: 'As músicas que você mais ouviu nos últimos 30 dias.',
+      empty: 'Ouça músicas da sua biblioteca e elas aparecerão aqui.',
+    },
+    forgotten: {
+      title: 'Favoritas esquecidas',
+      short: 'Músicas que você amava, sem ouvir há tempo',
+      body: 'Músicas que você ouviu muito (ou curtiu) mas não ouve há dois meses.',
+      empty:
+        'Músicas que você ouviu muito mas não ouve há dois meses aparecem aqui.',
+    },
+    unplayed: {
+      title: 'Nunca ouvidas',
+      short: 'Músicas da biblioteca que você ainda não ouviu',
+      body: 'Músicas da sua biblioteca que você nunca ouviu, dos artistas que você mais ouve. Uma seleção nova todo dia.',
+      empty: 'Você já ouviu todas as músicas da sua biblioteca.',
+    },
+    new: {
+      title: 'Novidades para você',
+      short: 'Músicas que ainda não estão na biblioteca',
+      body: 'Músicas que você ainda não tem, parecidas com as que você mais ouve, do YouTube Music.',
+      empty:
+        'Ouça algumas músicas da sua biblioteca primeiro: este mix parte das suas favoritas.',
+    },
   },
   podcasts: {
     title: 'Podcasts',

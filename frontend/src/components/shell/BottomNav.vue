@@ -181,6 +181,7 @@ const moreLinks = [
     label: 'nav.discover',
     match: ['FinderBrowse'],
   },
+  { name: 'Mixes', icon: 'repeat', label: 'nav.mixes' },
   { name: 'Monitor', icon: 'radar', label: 'nav.monitor' },
   { name: 'Podcasts', icon: 'mic', label: 'nav.podcasts' },
   { name: 'Charts', icon: 'trending', label: 'nav.charts' },

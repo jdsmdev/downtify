@@ -202,6 +202,7 @@ const items = [
     label: 'nav.discover',
     match: ['FinderBrowse'],
   },
+  { name: 'Mixes', icon: 'repeat', label: 'nav.mixes' },
   { name: 'Monitor', icon: 'radar', label: 'nav.monitor' },
   {
     name: 'Podcasts',
