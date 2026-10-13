@@ -1348,6 +1348,24 @@ export default {
     saveAsPlaylist: 'Mentés lejátszási listaként',
     emptyTitle: 'Még nincs itt semmi',
     newBecause: 'Mert mostanában ezeket hallgatod: {names}',
+    dailyTitle: 'Napi mixeid',
+    dailyBody:
+      'Kedvenc előadóid hangzás szerint csoportosítva: dalok, amiket szeretsz, és néhány, amit még nem hallottál. Minden nap új válogatás.',
+    dailyEmpty:
+      'Hallgass vagy kedvelj dalokat a könyvtáradból, és itt megjelennek a napi mixeid.',
+    dailyFailed: 'Nem sikerült betölteni a napi mixeidet.',
+    ownTitle: 'A hallgatásaid alapján',
+    decadesTitle: 'Évtizedek',
+    decadesBody: 'Az évek, amelyeket a legtöbbet hallgatod.',
+    daily: {
+      title: 'Napi mix {number}',
+      artists: '{names} és mások',
+      body: '{names} és hasonló előadók dalai a könyvtáradból: amiket hallgatsz, és néhány, amit még nem hallottál. Minden nap frissül.',
+    },
+    decade: {
+      title: 'Évtized: {decade}',
+      body: 'Kedvenc dalaid ebből az évtizedből ({decade}), más dalokkal ugyanabból a korból. Minden nap frissül.',
+    },
     on_repeat: {
       title: 'Ismétlésen',
       short: 'Amit mostanában a legtöbbet hallgatsz',

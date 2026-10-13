@@ -1364,6 +1364,24 @@ export default {
     saveAsPlaylist: 'Enregistrer comme playlist',
     emptyTitle: 'Rien pour l’instant',
     newBecause: 'Parce que vous écoutez {names}',
+    dailyTitle: 'Vos Daily Mix',
+    dailyBody:
+      'Vos artistes préférés regroupés par style, avec des titres que vous aimez et quelques-uns jamais écoutés. Une nouvelle sélection chaque jour.',
+    dailyEmpty:
+      'Écoutez ou aimez des titres de votre bibliothèque et vos Daily Mix apparaîtront ici.',
+    dailyFailed: 'Impossible de charger vos Daily Mix.',
+    ownTitle: 'D’après vos écoutes',
+    decadesTitle: 'Décennies',
+    decadesBody: 'Les années que vous écoutez le plus.',
+    daily: {
+      title: 'Daily Mix {number}',
+      artists: '{names} et plus',
+      body: 'Des titres de {names} et d’artistes proches dans votre bibliothèque : ceux que vous écoutez, avec quelques inédits. Renouvelé chaque jour.',
+    },
+    decade: {
+      title: 'Vos années {decade}',
+      body: 'Vos titres préférés des années {decade}, avec d’autres de la même époque. Renouvelé chaque jour.',
+    },
     on_repeat: {
       title: 'En boucle',
       short: 'Ce que vous écoutez le plus en ce moment',

@@ -5,11 +5,7 @@
       class="mx-auto flex max-w-[1680px] flex-col gap-8 px-4 pt-6 pb-10 sm:px-6 md:pt-8 lg:px-10"
     >
       <PageHeader :title="t('mixes.title')" :subtitle="t('mixes.subtitle')">
-        <UiButton
-          icon="refresh"
-          :loading="store.loading.value"
-          @click="refresh"
-        >
+        <UiButton icon="refresh" :loading="anyLoading" @click="refreshAll">
           {{ t('common.refresh') }}
         </UiButton>
       </PageHeader>
@@ -20,26 +16,51 @@
         :title="t('mixes.failed')"
         :body="store.error.value"
       >
-        <UiButton icon="refresh" @click="refresh">
+        <UiButton icon="refresh" @click="refreshAll">
           {{ t('common.retry') }}
         </UiButton>
       </UiEmpty>
 
-      <div v-else :class="GRID" :aria-busy="store.loading.value || undefined">
-        <MediaTile
-          v-for="item in cards"
-          :key="item.id"
-          :to="{ name: 'Mixes', params: { id: item.id } }"
-          :title="item.title"
-          :subtitle="item.subtitle"
-          :covers="item.covers"
-          :name="item.title"
-          :icon="item.icon"
-          :playable="item.tracks.length > 0"
-          :playing="isPlaying(item)"
-          @play="playCard(item)"
-        />
-      </div>
+      <template v-else>
+        <section
+          v-for="shelf in shelves"
+          :key="shelf.id"
+          class="flex flex-col gap-4"
+        >
+          <div>
+            <h2 class="text-display text-xl font-semibold">
+              {{ shelf.title }}
+            </h2>
+            <p v-if="shelf.body" class="mt-1 text-[13px] text-muted">
+              {{ shelf.body }}
+            </p>
+          </div>
+          <div v-if="shelf.loading" :class="GRID" aria-busy="true">
+            <div v-for="n in 6" :key="n" class="flex flex-col gap-2.5">
+              <UiSkeleton class="aspect-square w-full" />
+              <UiSkeleton class="h-4 w-2/3" />
+            </div>
+          </div>
+          <p v-else-if="!shelf.items.length" class="text-sm text-muted">
+            {{ shelf.empty }}
+          </p>
+          <div v-else :class="GRID">
+            <MediaTile
+              v-for="item in shelf.items"
+              :key="item.id"
+              :to="{ name: 'Mixes', params: { id: item.id } }"
+              :title="item.title"
+              :subtitle="item.subtitle"
+              :covers="item.covers"
+              :name="item.title"
+              :icon="item.icon"
+              :playable="item.tracks.length > 0"
+              :playing="isPlaying(item)"
+              @play="playCard(item)"
+            />
+          </div>
+        </section>
+      </template>
 
       <p class="text-[13px] text-faint">{{ t('mixes.howItWorks') }}</p>
     </div>
@@ -79,10 +100,8 @@
           <UiButton
             variant="ghost"
             icon="refresh"
-            :loading="
-              card.library ? store.loading.value : store.newLoading.value
-            "
-            @click="card.library ? refresh() : store.loadNew()"
+            :loading="loadingFor(card)"
+            @click="refreshFor(card)"
           >
             {{ t('common.refresh') }}
           </UiButton>
@@ -198,6 +217,8 @@ const ICONS = {
   forgotten: 'clock',
   unplayed: 'sparkle',
   new: 'wand',
+  daily: 'music',
+  decade: 'disc',
 }
 
 // Up to four different album covers, for the tile mosaic.
@@ -214,32 +235,106 @@ function libraryCovers(tracks) {
   return covers
 }
 
-const cards = computed(() => {
-  const built = store.mixes.value.map((mix) => ({
-    id: mix.id,
-    library: true,
-    tracks: mix.tracks,
-    covers: libraryCovers(mix.tracks),
-  }))
+// Title, texts and covers of one mix, by its kind.
+function describe(mix) {
+  const kind = mix.kind || mix.id
+  const count = mix.tracks.length
+  const tracks = count ? t('common.tracks', { count }) : ''
+  const base = {
+    ...mix,
+    kind,
+    library: kind !== 'new',
+    icon: ICONS[kind] || 'playlist',
+    covers: mix.covers || libraryCovers(mix.tracks),
+    empty: '',
+  }
+  if (kind === 'daily') {
+    const names = (mix.artists || []).join(', ')
+    return {
+      ...base,
+      title: t('mixes.daily.title', { number: mix.number }),
+      subtitle: names ? t('mixes.daily.artists', { names }) : tracks,
+      body: t('mixes.daily.body', { names }),
+    }
+  }
+  if (kind === 'decade') {
+    // A string: numbers get thousands separators ("1,990").
+    const decade = String(mix.decade)
+    return {
+      ...base,
+      title: t('mixes.decade.title', { decade }),
+      subtitle: tracks,
+      body: t('mixes.decade.body', { decade }),
+    }
+  }
+  return {
+    ...base,
+    title: t(`mixes.${kind}.title`),
+    subtitle: tracks || t(`mixes.${kind}.short`),
+    body: t(`mixes.${kind}.body`),
+    empty: t(`mixes.${kind}.empty`),
+  }
+}
+
+const dailyCards = computed(() => store.daily.value.map(describe))
+const decadeCards = computed(() =>
+  store.mixes.value.filter((mix) => mix.kind === 'decade').map(describe)
+)
+const ownCards = computed(() => {
+  const own = store.mixes.value.filter((mix) => mix.kind !== 'decade')
   const songs = store.newSongs.value
   const newCovers = songs.map((song) => song.cover_url).filter(Boolean)
-  built.push({
+  own.push({
     id: 'new',
-    library: false,
     tracks: songs,
     covers: [...new Set(newCovers)].slice(0, 4),
   })
-  return built.map((item) => ({
-    ...item,
-    icon: ICONS[item.id] || 'playlist',
-    title: t(`mixes.${item.id}.title`),
-    body: t(`mixes.${item.id}.body`),
-    empty: t(`mixes.${item.id}.empty`),
-    subtitle: item.tracks.length
-      ? t('common.tracks', { count: item.tracks.length })
-      : t(`mixes.${item.id}.short`),
-  }))
+  return own.map(describe)
 })
+const cards = computed(() => [
+  ...dailyCards.value,
+  ...ownCards.value,
+  ...decadeCards.value,
+])
+
+const shelves = computed(() =>
+  [
+    {
+      id: 'daily',
+      title: t('mixes.dailyTitle'),
+      body: t('mixes.dailyBody'),
+      empty: store.dailyError.value
+        ? t('mixes.dailyFailed')
+        : t('mixes.dailyEmpty'),
+      items: dailyCards.value,
+      loading: store.dailyLoading.value && !store.dailyLoaded.value,
+      show: true,
+    },
+    {
+      id: 'own',
+      title: t('mixes.ownTitle'),
+      body: '',
+      empty: '',
+      items: ownCards.value,
+      loading: !store.loaded.value,
+      show: true,
+    },
+    {
+      id: 'decades',
+      title: t('mixes.decadesTitle'),
+      body: t('mixes.decadesBody'),
+      empty: '',
+      items: decadeCards.value,
+      loading: false,
+      show: decadeCards.value.length > 0,
+    },
+  ].filter((shelf) => shelf.show)
+)
+
+const anyLoading = computed(
+  () =>
+    store.loading.value || store.dailyLoading.value || store.newLoading.value
+)
 
 const mixId = computed(() => String(route.params.id || ''))
 const card = computed(() =>
@@ -283,12 +378,29 @@ function togglePlay() {
   else playCard(card.value)
 }
 
-function refresh() {
+function loadingFor(item) {
+  if (item.kind === 'new') return store.newLoading.value
+  if (item.kind === 'daily') return store.dailyLoading.value
+  return store.loading.value
+}
+
+function refreshFor(item) {
+  if (item.kind === 'new') store.loadNew()
+  else if (item.kind === 'daily') store.loadDaily()
+  else store.load()
+}
+
+function refreshAll() {
   store.load()
+  store.loadDaily()
+  store.loadNew()
 }
 
 onMounted(() => {
   if (!store.loaded.value) store.load()
+  if (!store.dailyLoaded.value && !store.dailyLoading.value) {
+    store.loadDaily()
+  }
   if (!store.newLoaded.value && !store.newLoading.value) store.loadNew()
 })
 

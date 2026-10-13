@@ -1747,7 +1747,8 @@ The library mixes, each a list of library rows in the [`GET /tracks`](#get-track
   "mixes": [
     { "id": "on_repeat", "tracks": [{ "file": "Portishead/Dummy/Roads.mp3", "title": "Roads", "...": "..." }] },
     { "id": "forgotten", "tracks": [] },
-    { "id": "unplayed", "tracks": [] }
+    { "id": "unplayed", "tracks": [] },
+    { "id": "decade_1990", "kind": "decade", "decade": 1990, "tracks": [] }
   ]
 }
 ```
@@ -1757,6 +1758,16 @@ The library mixes, each a list of library rows in the [`GET /tracks`](#get-track
 | `on_repeat` | Songs played in the last 30 days, the most (and most recently) played first — a play counts half as much after 7 days |
 | `forgotten` | Songs played at least 3 times (or liked and played) but not in the last 60 days, most played first |
 | `unplayed` | Library songs never played, by the artists played and liked the most, at most 3 per artist; a different pick each day |
+
+After those come the decade mixes (`"id": "decade_1990"`, `"kind": "decade"`, `"decade": 1990`): the four decades (by the year tag, at least 20 songs) played and liked the most. The other mixes carry `kind` equal to their `id`.
+
+---
+
+### `GET /api/mixes/daily`
+
+Spotify-style Daily Mixes: the user's favourite artists grouped by Deezer's related artists (cached with [Discover](#discover)'s) and shared genre tags, each mix about 60% songs the user plays or likes and 40% never-played library songs of the same and similar artists. Up to six, ten songs or more each; a song is only in one.
+
+**Response:** `{ "mixes": [{ "id": "daily_1", "kind": "daily", "number": 1, "artists": ["Portishead", "Massive Attack"], "tracks": [...] }], "partial": false }` — `tracks` in the [`GET /tracks`](#get-tracks) shape; `artists` up to three names to show; `partial` is `true` when Deezer couldn't be asked for some artists (genre tags still group them). Empty `mixes` until something has been played or liked.
 
 ---
 

@@ -613,6 +613,10 @@ function getNewForYou() {
   return API.get('/api/mixes/new')
 }
 
+function getDailyMixes() {
+  return API.get('/api/mixes/daily')
+}
+
 function clearListens() {
   return API.delete('/api/discover/listens')
 }
@@ -877,6 +881,7 @@ export default {
   recordListen,
   getMixes,
   getNewForYou,
+  getDailyMixes,
   clearListens,
   getBlockedArtists,
   blockArtist,

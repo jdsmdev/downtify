@@ -25,7 +25,7 @@ Downtify covers everything you need to build and maintain a local music library 
 | [Server Settings](server.md) | The port Downtify listens on, changed from Settings (admins), with a restart right away if you like |
 | [Mobile Apps](mobile-apps.md) | Pair phone apps by QR code and stream the library to them (original or transcoded) |
 | [Discover](discover.md) | Artists, albums and playlists you don't have yet, suggested from your library, likes and listening; hide the ones you don't want |
-| [Mixes](mixes.md) | Playlists built from what you play: On repeat, Forgotten favourites, Never played, and New for you (songs not in your library yet) |
+| [Mixes](mixes.md) | Playlists built from what you play: Spotify-style Daily Mixes, On repeat, Forgotten favourites, Never played, decade mixes, and New for you (songs not in your library yet) |
 | [slskd & Navidrome](slskd-navidrome.md) | Download from Soulseek through slskd, mirror playlists into Navidrome, and track playlist downloads |
 | [Library catalog & path sync](library-catalog.md) | How Downtify tracks library files and playlists, playlists you create in the Library, and fixing paths after moving files |
 | [Existing music folders](external-library.md) | Point Downtify at folders of audio you already have; Sync reads tags, matches artists and skips songs already in the library |

@@ -1343,6 +1343,24 @@ export default {
     saveAsPlaylist: 'Çalma listesi olarak kaydet',
     emptyTitle: 'Burada henüz bir şey yok',
     newBecause: 'Son zamanlarda {names} dinlediğin için',
+    dailyTitle: 'Günlük mixlerin',
+    dailyBody:
+      'Tarzına göre gruplanmış favori sanatçıların: sevdiğin şarkılar ve henüz dinlemediğin birkaçı. Her gün yeni bir seçki.',
+    dailyEmpty:
+      'Kitaplığından birkaç şarkı dinle ya da beğen, günlük mixlerin burada görünsün.',
+    dailyFailed: 'Günlük mixlerin yüklenemedi.',
+    ownTitle: 'Dinlediklerinden',
+    decadesTitle: 'On yıllar',
+    decadesBody: 'En çok dinlediğin yıllar, çıkış yılına göre.',
+    daily: {
+      title: 'Günlük Mix {number}',
+      artists: '{names} ve dahası',
+      body: 'Kitaplığından {names} ve benzer sanatçıların şarkıları: dinlediklerin ve henüz dinlemediğin birkaçı. Her gün yenilenir.',
+    },
+    decade: {
+      title: '{decade} yılları',
+      body: '{decade} yıllarından favori şarkıların ve aynı dönemden diğerleri. Her gün yenilenir.',
+    },
     on_repeat: {
       title: 'Tekrar tekrar',
       short: 'Son zamanlarda en çok dinlediklerin',

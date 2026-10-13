@@ -1,7 +1,8 @@
 // Mixes: playlists the server builds from what the user plays - see
-// downtify/mixes.py. "On repeat", "Forgotten favourites" and "Never
-// played" are library tracks; "New for you" is songs not in the library
-// yet, played (streamed) and downloaded like the Similar page's.
+// downtify/mixes.py. "On repeat", "Forgotten favourites", "Never
+// played", the decade mixes and the Daily Mixes are library tracks; "New
+// for you" is songs not in the library yet, played (streamed) and
+// downloaded like the Similar page's.
 import { ref, shallowRef } from 'vue'
 
 import API from '/src/model/api'
@@ -11,6 +12,11 @@ const mixes = shallowRef([])
 const loading = ref(false)
 const loaded = ref(false)
 const error = ref('')
+
+const daily = shallowRef([])
+const dailyLoading = ref(false)
+const dailyLoaded = ref(false)
+const dailyError = ref('')
 
 const newSongs = shallowRef([])
 const newSeeds = shallowRef([])
@@ -40,20 +46,37 @@ function toSong(item) {
   }
 }
 
+// A library mix as the page shows it: the server's fields, tracks ready
+// for the player.
+function toMix(mix) {
+  return { ...mix, tracks: (mix.tracks || []).map(normalizeTrack) }
+}
+
 async function load() {
   loading.value = true
   error.value = ''
   try {
     const res = await API.getMixes()
-    mixes.value = (res.data?.mixes || []).map((mix) => ({
-      id: mix.id,
-      tracks: (mix.tracks || []).map(normalizeTrack),
-    }))
+    mixes.value = (res.data?.mixes || []).map(toMix)
     loaded.value = true
   } catch (err) {
     error.value = errorText(err)
   } finally {
     loading.value = false
+  }
+}
+
+async function loadDaily() {
+  dailyLoading.value = true
+  dailyError.value = ''
+  try {
+    const res = await API.getDailyMixes()
+    daily.value = (res.data?.mixes || []).map(toMix)
+    dailyLoaded.value = true
+  } catch (err) {
+    dailyError.value = errorText(err)
+  } finally {
+    dailyLoading.value = false
   }
 }
 
@@ -74,7 +97,11 @@ async function loadNew() {
 }
 
 function findMix(id) {
-  return mixes.value.find((mix) => mix.id === id) || null
+  return (
+    mixes.value.find((mix) => mix.id === id) ||
+    daily.value.find((mix) => mix.id === id) ||
+    null
+  )
 }
 
 export function useMixes() {
@@ -83,6 +110,10 @@ export function useMixes() {
     loading,
     loaded,
     error,
+    daily,
+    dailyLoading,
+    dailyLoaded,
+    dailyError,
     newSongs,
     newSeeds,
     newPartial,
@@ -90,6 +121,7 @@ export function useMixes() {
     newLoaded,
     newError,
     load,
+    loadDaily,
     loadNew,
     findMix,
   }

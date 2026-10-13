@@ -998,6 +998,46 @@ def _related_for_seed(
     return related, False
 
 
+def related_for_artists(
+    store: DiscoverStore,
+    names: list[str],
+    *,
+    lookup_id: Callable[[str], Optional[str]] = deezer.lookup_artist_id,
+    fetch_related: Callable[[str, int], Related] = deezer.related_artists,
+    now: Optional[datetime] = None,
+) -> tuple[dict[str, Related], bool]:
+    """``({artist key: related artists}, partial)`` for *names*, from
+    the same cache as the suggestions (Deezer when it's stale).
+    ``partial`` when Deezer couldn't be asked for some of them."""
+
+    now = now or _now()
+
+    def fetch(name: str) -> tuple[str, Related, bool]:
+        key = artist_key(name)
+        try:
+            related, failed = _related_for_seed(
+                store,
+                key,
+                name,
+                lookup_id=lookup_id,
+                fetch_related=fetch_related,
+                now=now,
+            )
+        except Exception:
+            logger.opt(exception=True).warning(
+                'Related artists failed for {!r}', name
+            )
+            return key, [], True
+        return key, related, failed
+
+    with ThreadPoolExecutor(max_workers=_WORKERS) as pool:
+        results = list(pool.map(fetch, [n for n in names if artist_key(n)]))
+    return (
+        {key: rows for key, rows, _failed in results},
+        any(failed for _key, _rows, failed in results),
+    )
+
+
 def recommendations(
     store: DiscoverStore,
     library: list[dict[str, Any]],

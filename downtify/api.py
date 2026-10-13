@@ -245,8 +245,11 @@ for downloads stay shared, and files are never stored twice.
   ``GET|POST|DELETE /api/discover/blocked`` (artists never to suggest -
   ``POST`` body ``{name}``, ``DELETE`` takes ``?name=``)
 * ``GET  /api/mixes`` (playlists built from what the user plays -
-  ``{mixes: [{id, tracks}]}``, ids ``on_repeat``, ``forgotten``,
-  ``unplayed``, tracks in the ``GET /tracks`` shape) and ``GET
+  ``{mixes: [{id, kind, tracks}]}``, ids ``on_repeat``, ``forgotten``,
+  ``unplayed``, then ``decade_<year>`` (``kind`` ``decade``, plus
+  ``decade``), tracks in the ``GET /tracks`` shape), ``GET
+  /api/mixes/daily`` (Spotify-style Daily Mixes - ``{mixes: [{id, kind,
+  number, artists, tracks}], partial}``) and ``GET
   /api/mixes/new`` (songs not in the library like the user's current
   favourites - ``{seeds: [{artist, title}], tracks, partial}``, tracks
   as in ``GET /api/similar/tracks``) - see ``downtify.mixes``
@@ -359,6 +362,7 @@ from .discover import (
     collections,
     deezer_collections,
     recommendations,
+    related_for_artists,
     spotify_collections,
 )
 from .downloader import (
@@ -7040,19 +7044,41 @@ def _mix_inputs(
     return entries, store.track_plays(user_id), user_id
 
 
+def _mix_likes(user_id: int) -> list[str]:
+    return state.likes.paths(user_id) if state.likes is not None else []
+
+
 @router.get('/api/mixes')
 async def mixes_endpoint(request: Request) -> dict[str, Any]:
     """Playlists built from what the user plays (see ``downtify.mixes``):
-    ``on_repeat``, ``forgotten`` and ``unplayed``, each
-    ``{id, tracks}`` with library rows. Worked out on every request, so
-    they always follow the latest listens."""
+    ``on_repeat``, ``forgotten`` and ``unplayed``, then decade mixes,
+    each ``{id, kind, tracks}`` with library rows. Worked out on every
+    request, so they always follow the latest listens."""
 
     entries, plays, user_id = await asyncio.to_thread(_mix_inputs, request)
-    liked: list[str] = []
-    if state.likes is not None:
-        liked = await asyncio.to_thread(state.likes.paths, user_id)
+    liked = await asyncio.to_thread(_mix_likes, user_id)
     built = await asyncio.to_thread(mixes.build_mixes, entries, plays, liked)
     return {'mixes': built}
+
+
+@router.get('/api/mixes/daily')
+async def daily_mixes_endpoint(request: Request) -> dict[str, Any]:
+    """Spotify-style Daily Mixes (see ``downtify.mixes.daily_mixes``):
+    ``{mixes: [{id, kind, number, artists, tracks}], partial}``. Empty
+    until something has been played or liked."""
+
+    store = _require_discover()
+    entries, plays, user_id = await asyncio.to_thread(_mix_inputs, request)
+    liked = await asyncio.to_thread(_mix_likes, user_id)
+
+    def related_for(
+        names: list[str],
+    ) -> tuple[dict[str, list[dict[str, Any]]], bool]:
+        return related_for_artists(store, names)
+
+    return await asyncio.to_thread(
+        mixes.daily_mixes, entries, plays, liked, related_for
+    )
 
 
 @router.get('/api/mixes/new')

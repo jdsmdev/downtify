@@ -1349,6 +1349,24 @@ export default {
     saveAsPlaylist: 'Guardar como lista',
     emptyTitle: 'Aún no hay nada',
     newBecause: 'Porque has estado escuchando {names}',
+    dailyTitle: 'Tus Daily Mix',
+    dailyBody:
+      'Tus artistas favoritos agrupados por estilo, con canciones que te encantan y algunas que aún no has escuchado. Una selección nueva cada día.',
+    dailyEmpty:
+      'Escucha o marca como favoritas canciones de tu biblioteca y tus Daily Mix aparecerán aquí.',
+    dailyFailed: 'No se pudieron cargar tus Daily Mix.',
+    ownTitle: 'Según lo que escuchas',
+    decadesTitle: 'Décadas',
+    decadesBody: 'Los años que más escuchas, por año de lanzamiento.',
+    daily: {
+      title: 'Daily Mix {number}',
+      artists: '{names} y más',
+      body: 'Canciones de {names} y artistas parecidos de tu biblioteca: las que escuchas y algunas que aún no has oído. Se renueva cada día.',
+    },
+    decade: {
+      title: 'Tus años {decade}',
+      body: 'Tus canciones favoritas de los años {decade}, con otras de la misma época. Se renueva cada día.',
+    },
     on_repeat: {
       title: 'En bucle',
       short: 'Lo que más escuchas últimamente',

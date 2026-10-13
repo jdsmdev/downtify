@@ -1340,6 +1340,24 @@ export default {
     saveAsPlaylist: 'Salvar como playlist',
     emptyTitle: 'Nada aqui ainda',
     newBecause: 'Porque você tem ouvido {names}',
+    dailyTitle: 'Seus Daily Mix',
+    dailyBody:
+      'Seus artistas favoritos agrupados por estilo, com músicas que você ama e algumas que ainda não ouviu. Uma seleção nova todo dia.',
+    dailyEmpty:
+      'Ouça ou curta algumas músicas da sua biblioteca e seus Daily Mix aparecerão aqui.',
+    dailyFailed: 'Não foi possível carregar seus Daily Mix.',
+    ownTitle: 'Do que você ouve',
+    decadesTitle: 'Décadas',
+    decadesBody: 'Os anos que você mais ouve, pelo ano de lançamento.',
+    daily: {
+      title: 'Daily Mix {number}',
+      artists: '{names} e mais',
+      body: 'Músicas de {names} e artistas parecidos da sua biblioteca: as que você ouve e algumas que ainda não ouviu. Renovado todo dia.',
+    },
+    decade: {
+      title: 'Seus anos {decade}',
+      body: 'Suas músicas favoritas dos anos {decade}, com outras da mesma época. Renovado todo dia.',
+    },
     on_repeat: {
       title: 'No repeat',
       short: 'O que você mais ouve ultimamente',
