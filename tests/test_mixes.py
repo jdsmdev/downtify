@@ -14,7 +14,7 @@ from starlette.requests import Request
 
 from downtify import api, mixes
 from downtify.auth import Principal
-from downtify.discover import DiscoverStore
+from downtify.discover import DiscoverStore, artist_key
 
 NOW = datetime(2026, 10, 1, 12, 0, tzinfo=timezone.utc)
 
@@ -169,6 +169,95 @@ def test_new_for_you_interleaves_seeds_and_skips_the_library():
     assert result['partial'] is True
 
 
+def _tagged(file: str, artist: str, **tags: str) -> dict[str, Any]:
+    return {**_entry(file, artist), **tags}
+
+
+def test_cluster_artists_groups_related_and_genre_alike():
+    rock_a, rock_b = artist_key('Rock A'), artist_key('Rock B')
+    jazz, jazz_extra = artist_key('Jazz C'), artist_key('Jazz Extra')
+    seeds = [(rock_a, 'Rock A', 9.0), (jazz, 'Jazz C', 6.0)]
+    seeds.append((rock_b, 'Rock B', 2.0))
+
+    clusters = mixes.cluster_artists(
+        seeds,
+        {rock_a: [{'name': 'Rock B'}]},
+        {rock_a, rock_b, jazz, jazz_extra, artist_key('Loner')},
+        {jazz: {'jazz'}, jazz_extra: {'jazz'}},
+    )
+
+    assert clusters == [
+        {'seeds': [rock_a, rock_b], 'extra': []},
+        {'seeds': [jazz], 'extra': [jazz_extra]},
+    ]
+
+
+def test_daily_mixes_cluster_favourites_and_mix_in_unplayed_songs():
+    entries = [_tagged(f'ra{i}.mp3', 'Rock A', genre='Rock') for i in range(8)]
+    entries += [
+        _tagged(f'rb{i}.mp3', 'Rock B', genre='Rock') for i in range(8)
+    ]
+    entries += [
+        _tagged(f'jc{i}.mp3', 'Jazz C', genre='Jazz') for i in range(12)
+    ]
+    plays = []
+    for file in ('ra0.mp3', 'ra1.mp3', 'ra2.mp3'):
+        plays += _plays(file, 1, 2, 3)
+    for file in ('jc0.mp3', 'jc1.mp3', 'jc2.mp3'):
+        plays += _plays(file, 1, 2)
+    plays += _plays('rb0.mp3', 1) + _plays('rb1.mp3', 1)
+    asked: list[list[str]] = []
+
+    def related_for(names: list[str]) -> tuple[dict[str, Any], bool]:
+        asked.append(names)
+        return {}, False
+
+    result = mixes.daily_mixes(entries, plays, [], related_for, NOW)
+
+    assert asked == [['Rock A', 'Jazz C', 'Rock B']]
+    assert [m['id'] for m in result['mixes']] == ['daily_1', 'daily_2']
+    rock, jazz = (
+        [t['file'] for t in mix['tracks']] for mix in result['mixes']
+    )
+    assert result['mixes'][0]['artists'] == ['Rock A', 'Rock B']
+    assert {f[:2] for f in rock} == {'ra', 'rb'}
+    assert len(rock) == 16
+    played = {'ra0.mp3', 'ra1.mp3', 'ra2.mp3', 'rb0.mp3', 'rb1.mp3'}
+    assert rock[0] in played
+    assert played <= set(rock)
+    assert {f[:2] for f in jazz} == {'jc'}
+    assert len(jazz) == 12
+    assert not set(rock) & set(jazz)
+    # The same day gives the same mixes.
+    assert result == mixes.daily_mixes(entries, plays, [], related_for, NOW)
+
+
+def test_daily_mixes_need_listening_history():
+    def related_for(names: list[str]) -> tuple[dict[str, Any], bool]:
+        raise AssertionError('not asked without favourites')
+
+    entries = [_entry('a.mp3', 'A')]
+    assert mixes.daily_mixes(entries, [], [], related_for, NOW) == {
+        'mixes': [],
+        'partial': False,
+    }
+
+
+def test_decade_mixes_follow_the_most_played_decades():
+    entries = [_tagged(f'n{i}.mp3', f'N{i}', year='1995') for i in range(25)]
+    entries += [
+        _tagged(f'z{i}.mp3', f'Z{i}', year='2004-05-01') for i in range(25)
+    ]
+    entries += [_tagged(f'e{i}.mp3', f'E{i}', year='1980') for i in range(5)]
+    stats = mixes.track_stats(_plays('z3.mp3', 1, 2), NOW)
+
+    picked = mixes.decade_mixes(entries, stats, set(), NOW)
+
+    assert [decade for decade, _files in picked] == [2000, 1990]
+    assert picked[0][1][0] == 'z3.mp3'
+    assert len(picked[0][1]) == 25
+
+
 # ── endpoints ─────────────────────────────────────────────────────────
 
 
@@ -223,3 +312,23 @@ def test_new_for_you_endpoint_is_empty_without_listens(mix_state):
         'tracks': [],
         'partial': False,
     }
+
+
+def test_daily_mixes_endpoint_asks_for_the_favourites_related_artists(
+    mix_state, monkeypatch
+):
+    asked: list[list[str]] = []
+
+    def related(_store, names):
+        asked.append(names)
+        return {}, True
+
+    monkeypatch.setattr(api, 'related_for_artists', related)
+    asyncio.run(
+        api.record_listen_endpoint(_request({'artist': 'A', 'file': 'a.mp3'}))
+    )
+
+    result = asyncio.run(api.daily_mixes_endpoint(_request()))
+
+    assert asked == [['A']]
+    assert result == {'mixes': [], 'partial': True}

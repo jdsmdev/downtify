@@ -8,7 +8,24 @@ icon: lucide/repeat
 
 ## How to use it
 
-Open **Mixes** from the sidebar (or the **More** sheet on phones). Each mix is a tile; play it straight from the tile, or open it to see its songs.
+Open **Mixes** from the sidebar (or the **More** sheet on phones). Each mix is a tile; play it straight from the tile, or open it to see its songs. The page has up to three shelves: **Your Daily Mixes**, the mixes made from your listening, and **Decades**.
+
+## Daily Mixes
+
+Like Spotify's Daily Mixes: up to six mixes, each built around a group of your favourite artists that sound alike.
+
+1. Your favourite artists are the ones you play the most (recent plays count more: a play counts half as much after a month) and like the most. The top 18 are used.
+2. They are grouped by how alike they are: Deezer's "related artists" for each one (the same lookup [Discover](discover.md) uses, cached for a week), and the genre tags their songs share. A group holds up to four favourites; the rest start a new one.
+3. Other artists in your library that are alike a group's favourites join it too, so a mix also brings in similar music you have but rarely play.
+4. Each mix is about 60% songs you already play or like, and 40% library songs from the same artists you've never played, interleaved. A song is only ever in one Daily Mix, and a group with fewer than 10 songs makes none.
+
+The tile shows the first artists in the mix ("Portishead, Massive Attack and more"). Daily Mixes change every day, and follow your listening as it changes.
+
+::: tip Genre tags help
+When Deezer can't be reached, artists are still grouped by the genre tags in your files. Tagging genres (or letting [Upgrade library](library-upgrade.md) fill tags in) makes the groups better either way.
+:::
+
+## Made from your listening
 
 | Mix | What's in it |
 |-----|--------------|
@@ -18,6 +35,10 @@ Open **Mixes** from the sidebar (or the **More** sheet on phones). Each mix is a
 | **New for you** | Songs that aren't in your library at all, like your current favourites. It uses YouTube Music's radio mix of your top three **On repeat** songs, one per artist. Every row plays in full and downloads, just like on [Similar](similar.md). |
 
 On a library mix, **Save as playlist** turns what's in it right now into a regular [playlist](m3u-export.md#playlists-you-create) you can edit. The mix itself keeps changing, but the saved playlist doesn't.
+
+## Decades
+
+"Your 1990s", "Your 2000s" and so on, from the year tag of your songs. A decade needs at least 20 songs in your library; the four decades you play (and like) the most get a mix, with the songs you play the most first and the rest of the decade rotating daily, at most four songs per artist.
 
 ## What counts as a listen
 
@@ -33,4 +54,4 @@ To start over, use **Clear listening history** under **Hidden artists** on the [
 
 ## API
 
-See [`GET /api/mixes`](../api-reference.md#get-apimixes) and [`GET /api/mixes/new`](../api-reference.md#get-apimixesnew) in the API Reference.
+See [`GET /api/mixes`](../api-reference.md#get-apimixes), [`GET /api/mixes/daily`](../api-reference.md#get-apimixesdaily) and [`GET /api/mixes/new`](../api-reference.md#get-apimixesnew) in the API Reference.

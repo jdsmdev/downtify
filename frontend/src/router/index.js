@@ -83,7 +83,7 @@ const routes = [
   },
   {
     // Playlists built from what the user plays (`/mixes/<id>`: one mix).
-    path: '/mixes/:id(on_repeat|forgotten|unplayed|new)?',
+    path: '/mixes/:id?',
     name: 'Mixes',
     component: () => import('/src/views/MixesView.vue'),
   },

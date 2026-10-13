@@ -1315,6 +1315,24 @@ export default {
     saveAsPlaylist: 'Save as playlist',
     emptyTitle: 'Nothing here yet',
     newBecause: 'Because you’ve been playing {names}',
+    dailyTitle: 'Your Daily Mixes',
+    dailyBody:
+      'Your favourite artists grouped by sound, with songs you love and a few you haven’t played yet. A new pick every day.',
+    dailyEmpty:
+      'Play or like some songs from your library and your Daily Mixes appear here.',
+    dailyFailed: 'Your Daily Mixes couldn’t be loaded. Try again later.',
+    ownTitle: 'Made from your listening',
+    decadesTitle: 'Decades',
+    decadesBody: 'The years you listen to the most, by release year.',
+    daily: {
+      title: 'Daily Mix {number}',
+      artists: '{names} and more',
+      body: 'Songs by {names} and similar artists in your library: the ones you play, with a few you haven’t heard yet. Refreshed every day.',
+    },
+    decade: {
+      title: 'Your {decade}s',
+      body: 'Your favourite songs from the {decade}s, with others from the same years. Refreshed every day.',
+    },
     on_repeat: {
       title: 'On repeat',
       short: 'What you play the most lately',
