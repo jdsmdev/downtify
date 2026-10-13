@@ -32,6 +32,7 @@ export default {
     podcasts: 'Podcasts',
     charts: 'Classements',
     similar: 'Similaires',
+    mixes: 'Mix',
     settings: 'Paramètres',
     more: 'Plus',
     playlists: 'Playlists',
@@ -92,6 +93,7 @@ export default {
       playlist: 'Playlist',
       artist: 'Artiste',
       library: 'Bibliothèque',
+      mix: 'Mix',
     },
     step1Title: 'Trouvez de la musique',
     step1Body:
@@ -597,6 +599,7 @@ export default {
       search: 'Lecture depuis la recherche',
 
       podcast: 'Lecture du podcast',
+      mix: 'Lecture du mix',
     },
     goToAlbum: 'Album',
     goToArtist: 'Artiste',
@@ -1349,6 +1352,45 @@ export default {
       'Impossible de charger les albums et playlists pour le moment. Réessayez plus tard.',
     poweredBy:
       'Les artistes viennent des artistes similaires de Deezer ; les albums, de Deezer et Spotify ; les playlists, de chacun.',
+  },
+  mixes: {
+    title: 'Pour vous',
+    subtitle:
+      'Des playlists créées à partir de ce que vous écoutez, mises à jour en continu.',
+    kicker: 'Mix',
+    failed: 'Impossible de charger vos mix',
+    howItWorks:
+      'Un titre compte comme écouté dès que la moitié (ou quatre minutes) a été jouée. Vos mix ne sont visibles que par vous.',
+    saveAsPlaylist: 'Enregistrer comme playlist',
+    emptyTitle: 'Rien pour l’instant',
+    newBecause: 'Parce que vous écoutez {names}',
+    on_repeat: {
+      title: 'En boucle',
+      short: 'Ce que vous écoutez le plus en ce moment',
+      body: 'Les titres que vous avez le plus écoutés ces 30 derniers jours.',
+      empty:
+        'Écoutez des titres de votre bibliothèque et ils apparaîtront ici.',
+    },
+    forgotten: {
+      title: 'Favoris oubliés',
+      short: 'Des titres aimés, pas écoutés récemment',
+      body: 'Des titres très écoutés (ou aimés) que vous n’avez pas entendus depuis deux mois.',
+      empty:
+        'Les titres très écoutés mais pas entendus depuis deux mois apparaissent ici.',
+    },
+    unplayed: {
+      title: 'Jamais écoutés',
+      short: 'Des titres de votre bibliothèque encore inédits',
+      body: 'Des titres de votre bibliothèque jamais écoutés, des artistes que vous écoutez le plus. Une nouvelle sélection chaque jour.',
+      empty: 'Vous avez écouté tous les titres de votre bibliothèque.',
+    },
+    new: {
+      title: 'Nouveautés pour vous',
+      short: 'Des titres absents de votre bibliothèque',
+      body: 'Des titres que vous n’avez pas encore, proches de ceux que vous écoutez le plus, depuis YouTube Music.',
+      empty:
+        'Écoutez d’abord des titres de votre bibliothèque : ce mix part de vos favoris.',
+    },
   },
   podcasts: {
     title: 'Podcasts',

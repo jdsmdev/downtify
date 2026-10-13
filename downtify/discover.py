@@ -283,6 +283,20 @@ class DiscoverStore:
                     recorded_at TEXT NOT NULL
                 )
             """)
+            # One row per counted play of a library file - what the
+            # automatic mixes (``downtify.mixes``) are built from.
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS discover_track_plays (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL DEFAULT 0,
+                    file TEXT NOT NULL,
+                    played_at TEXT NOT NULL
+                )
+            """)
+            conn.execute(
+                'CREATE INDEX IF NOT EXISTS discover_track_plays_user '
+                'ON discover_track_plays (user_id, played_at)'
+            )
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS discover_blocked (
                     artist_key TEXT NOT NULL,
@@ -393,6 +407,7 @@ class DiscoverStore:
         when: Optional[datetime] = None,
         play_id: str = '',
         user_id: int = 0,
+        file: str = '',
     ) -> Optional[dict[str, Any]]:
         """Count one listen to *name* for *user_id*. ``None`` for a name
         with no key.
@@ -400,7 +415,8 @@ class DiscoverStore:
         *when* is when it was played - an app that was offline reports
         its plays later; a late report never moves ``last_played`` back.
         A *play_id* is counted once: the same play reported twice (a
-        retry after a lost answer) doesn't add up.
+        retry after a lost answer) doesn't add up. *file* (the library
+        path played) is also logged per play, for the automatic mixes.
         """
 
         name = str(name or '').strip()
@@ -429,6 +445,13 @@ class DiscoverStore:
                          last_played = MAX(last_played, excluded.last_played)""",
                     (key, uid, name, stamp),
                 )
+                stored = str(file or '').strip().replace('\\', '/')
+                if stored:
+                    conn.execute(
+                        'INSERT INTO discover_track_plays '
+                        '(user_id, file, played_at) VALUES (?, ?, ?)',
+                        (uid, stored[:1024], stamp),
+                    )
             row = conn.execute(
                 'SELECT name, plays, last_played FROM discover_listens '
                 'WHERE artist_key = ? AND user_id = ?',
@@ -451,10 +474,27 @@ class DiscoverStore:
                 ).fetchall()
         return [dict(row) for row in rows]
 
+    def track_plays(self, user_id: int) -> list[dict[str, Any]]:
+        """Every logged play of a library file by *user_id*, as
+        ``{file, played_at}``, oldest first."""
+
+        with self._connect() as conn:
+            rows = conn.execute(
+                'SELECT file, played_at FROM discover_track_plays '
+                'WHERE user_id = ? ORDER BY played_at, id',
+                (int(user_id),),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def clear_listens(self, user_id: Optional[int] = None) -> int:
         with self._connect() as conn:
             if user_id is None:
+                conn.execute('DELETE FROM discover_track_plays')
                 return conn.execute('DELETE FROM discover_listens').rowcount
+            conn.execute(
+                'DELETE FROM discover_track_plays WHERE user_id = ?',
+                (int(user_id),),
+            )
             cur = conn.execute(
                 'DELETE FROM discover_listens WHERE user_id = ?',
                 (int(user_id),),
@@ -475,6 +515,11 @@ class DiscoverStore:
                 'UPDATE discover_blocked SET user_id = ? WHERE user_id = 0',
                 (int(user_id),),
             ).rowcount
+            conn.execute(
+                'UPDATE discover_track_plays SET user_id = ? '
+                'WHERE user_id = 0',
+                (int(user_id),),
+            )
             return listens + blocked
 
     def remove_user(self, user_id: int) -> None:
@@ -487,6 +532,10 @@ class DiscoverStore:
             )
             conn.execute(
                 'DELETE FROM discover_blocked WHERE user_id = ?',
+                (int(user_id),),
+            )
+            conn.execute(
+                'DELETE FROM discover_track_plays WHERE user_id = ?',
                 (int(user_id),),
             )
 

@@ -32,6 +32,7 @@ export default {
     podcasts: 'Podcasts',
     charts: 'Charts',
     similar: 'Similar',
+    mixes: 'Mixes',
     settings: 'Settings',
     more: 'More',
     playlists: 'Playlists',
@@ -89,6 +90,7 @@ export default {
       playlist: 'Playlist',
       artist: 'Artist',
       library: 'Library',
+      mix: 'Mix',
     },
     step1Title: 'Find music',
     step1Body:
@@ -573,6 +575,7 @@ export default {
       library: 'Playing from your library',
       search: 'Playing from search',
       podcast: 'Playing from podcast',
+      mix: 'Playing from mix',
     },
     goToAlbum: 'Album',
     goToArtist: 'Artist',
@@ -1282,7 +1285,7 @@ export default {
     clearListens: 'Clear listening history',
     clearListensTitle: 'Clear listening history?',
     clearListensBody:
-      'Discover forgets what you’ve played. Your library and liked songs stay as they are.',
+      'Discover and your mixes forget what you’ve played. Your library and liked songs stay as they are.',
     listensCleared: 'Listening history cleared',
     artistsTitle: 'Artists for you',
     showAll: 'Show all ({count})',
@@ -1301,6 +1304,43 @@ export default {
       'Albums and playlists couldn’t be loaded right now. Try again later.',
     poweredBy:
       'Artists come from Deezer’s similar artists; albums from Deezer and Spotify; playlists from each.',
+  },
+  mixes: {
+    title: 'Made for you',
+    subtitle: 'Playlists built from what you listen to, updated as you play.',
+    kicker: 'Mix',
+    failed: 'Couldn’t load your mixes',
+    howItWorks:
+      'A song counts as played once half of it (or four minutes) has played. Your mixes are yours alone.',
+    saveAsPlaylist: 'Save as playlist',
+    emptyTitle: 'Nothing here yet',
+    newBecause: 'Because you’ve been playing {names}',
+    on_repeat: {
+      title: 'On repeat',
+      short: 'What you play the most lately',
+      body: 'The songs you’ve played the most in the last 30 days.',
+      empty: 'Play some songs from your library and they’ll show up here.',
+    },
+    forgotten: {
+      title: 'Forgotten favourites',
+      short: 'Songs you loved, not played lately',
+      body: 'Songs you played a lot (or liked) but haven’t heard in two months.',
+      empty:
+        'Songs you played a lot but haven’t heard in two months show up here.',
+    },
+    unplayed: {
+      title: 'Never played',
+      short: 'Library songs you haven’t heard yet',
+      body: 'Songs in your library you’ve never played, from the artists you play the most. A new pick every day.',
+      empty: 'You’ve played every song in your library.',
+    },
+    new: {
+      title: 'New for you',
+      short: 'Songs not in your library yet',
+      body: 'Songs you don’t have yet, like the ones you play the most, from YouTube Music.',
+      empty:
+        'Play some songs from your library first: this mix is built from your favourites.',
+    },
   },
   podcasts: {
     title: 'Podcasts',

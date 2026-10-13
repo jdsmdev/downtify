@@ -32,6 +32,7 @@ export default {
     podcasts: 'Podcastler',
     charts: 'Müzik listeleri',
     similar: 'Benzerler',
+    mixes: 'Mixler',
     settings: 'Ayarlar',
     more: 'Daha fazla',
     playlists: 'Çalma listeleri',
@@ -93,6 +94,7 @@ export default {
       playlist: 'Çalma listesi',
       artist: 'Sanatçı',
       library: 'Kitaplık',
+      mix: 'Mix',
     },
     step1Title: 'Müzik bul',
     step1Body:
@@ -584,6 +586,7 @@ export default {
       search: 'Aramadan çalınıyor',
 
       podcast: 'Podcastten çalınıyor',
+      mix: 'Mixten çalınıyor',
     },
     goToAlbum: 'Albüm',
     goToArtist: 'Sanatçı',
@@ -1328,6 +1331,43 @@ export default {
       'Albümler ve çalma listeleri şu anda yüklenemedi. Daha sonra tekrar deneyin.',
     poweredBy:
       'Sanatçılar Deezer’ın benzer sanatçılarından; albümler Deezer ve Spotify’dan; çalma listeleri her birinden gelir.',
+  },
+  mixes: {
+    title: 'Senin için',
+    subtitle:
+      'Dinlediklerinden oluşturulan, dinledikçe güncellenen çalma listeleri.',
+    kicker: 'Mix',
+    failed: 'Mixlerin yüklenemedi',
+    howItWorks:
+      'Bir şarkının yarısı (ya da dört dakikası) çaldığında dinlenmiş sayılır. Mixlerini yalnızca sen görürsün.',
+    saveAsPlaylist: 'Çalma listesi olarak kaydet',
+    emptyTitle: 'Burada henüz bir şey yok',
+    newBecause: 'Son zamanlarda {names} dinlediğin için',
+    on_repeat: {
+      title: 'Tekrar tekrar',
+      short: 'Son zamanlarda en çok dinlediklerin',
+      body: 'Son 30 günde en çok dinlediğin şarkılar.',
+      empty: 'Kitaplığından şarkılar dinle, burada görünsünler.',
+    },
+    forgotten: {
+      title: 'Unutulan favoriler',
+      short: 'Sevdiğin ama son zamanlarda dinlemediğin şarkılar',
+      body: 'Çok dinlediğin (ya da beğendiğin) ama iki aydır dinlemediğin şarkılar.',
+      empty: 'Çok dinleyip iki aydır dinlemediğin şarkılar burada görünür.',
+    },
+    unplayed: {
+      title: 'Hiç dinlenmeyenler',
+      short: 'Kitaplığında henüz dinlemediğin şarkılar',
+      body: 'Kitaplığında hiç dinlemediğin, en çok dinlediğin sanatçılardan şarkılar. Her gün yeni bir seçki.',
+      empty: 'Kitaplığındaki her şarkıyı dinledin.',
+    },
+    new: {
+      title: 'Senin için yeni',
+      short: 'Henüz kitaplığında olmayan şarkılar',
+      body: 'Henüz sende olmayan, en çok dinlediklerine benzeyen şarkılar, YouTube Music’ten.',
+      empty:
+        'Önce kitaplığından birkaç şarkı dinle: bu mix favorilerinden oluşturulur.',
+    },
   },
   podcasts: {
     title: 'Podcastler',

@@ -1686,6 +1686,7 @@ Count one listen to an artist. Sent by the player once a library song has played
 | `track_id` | string | one of these | A [track id](#mobile-api-v1) instead: its album artist is used |
 | `played_at` | string | no | ISO 8601 time of the play, for plays reported after being offline (a future time counts as now; a late report never moves `last_played` back) |
 | `play_id` | string | no | Identifies this play: reporting it again doesn't count it twice |
+| `file` | string | no | The library path played (as in [`GET /tracks`](#get-tracks); implied by `track_id`): the play is also logged per song for the [Mixes](features/mixes.md). Ignored when it isn't a library file |
 
 **Response:** `{ "name": "Portishead", "plays": 7, "last_played": "2026-09-26T17:31:40+00:00" }`
 
@@ -1695,7 +1696,7 @@ Count one listen to an artist. Sent by the player once a library song has played
 
 ### `DELETE /api/discover/listens`
 
-Forget every counted listen. The library and likes are untouched.
+Forget every counted listen, including the per-song plays the [Mixes](features/mixes.md) are built from. The library and likes are untouched.
 
 **Response:** `{ "cleared": 12 }`
 
@@ -1728,6 +1729,42 @@ Show a hidden artist again.
 | `name` | string | yes | Artist name (query parameter) |
 
 **Response:** `{ "name": "Archive", "removed": true }` — `removed` is `false` when it wasn't hidden.
+
+---
+
+## Mixes
+
+Playlists built from what the signed-in user plays — see [Mixes](features/mixes.md). Worked out on every request from the per-song plays [`POST /api/discover/listens`](#post-apidiscoverlistens) logs; nothing is written to disk.
+
+### `GET /api/mixes`
+
+The library mixes, each a list of library rows in the [`GET /tracks`](#get-tracks) shape (at most 50).
+
+**Response:**
+
+```json
+{
+  "mixes": [
+    { "id": "on_repeat", "tracks": [{ "file": "Portishead/Dummy/Roads.mp3", "title": "Roads", "...": "..." }] },
+    { "id": "forgotten", "tracks": [] },
+    { "id": "unplayed", "tracks": [] }
+  ]
+}
+```
+
+| `id` | What it holds |
+|------|---------------|
+| `on_repeat` | Songs played in the last 30 days, the most (and most recently) played first — a play counts half as much after 7 days |
+| `forgotten` | Songs played at least 3 times (or liked and played) but not in the last 60 days, most played first |
+| `unplayed` | Library songs never played, by the artists played and liked the most, at most 3 per artist; a different pick each day |
+
+---
+
+### `GET /api/mixes/new`
+
+Songs that aren't in the library, like the user's current favourites: YouTube Music's radio mix (see [`GET /api/similar/tracks`](#get-apisimilartracks)) of the top 3 `on_repeat` songs (all-time favourites when nothing was played lately), one per artist, interleaved, library songs left out.
+
+**Response:** `{ "seeds": [{ "artist": "Portishead", "title": "Roads" }], "tracks": [...], "partial": false }` — `tracks` are downloadable song rows like `GET /api/similar/tracks`'; `partial` is `true` when YouTube Music couldn't answer for some seed. Empty `seeds` and `tracks` until something has been played.
 
 ---
 

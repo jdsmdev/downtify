@@ -32,6 +32,7 @@ export default {
     podcasts: 'Podcastok',
     charts: 'Toplisták',
     similar: 'Hasonlók',
+    mixes: 'Mixek',
     settings: 'Beállítások',
     more: 'Továbbiak',
     playlists: 'Lejátszási listák',
@@ -89,6 +90,7 @@ export default {
       playlist: 'Lejátszási lista',
       artist: 'Előadó',
       library: 'Könyvtár',
+      mix: 'Mix',
     },
     step1Title: 'Keress zenét',
     step1Body:
@@ -584,6 +586,7 @@ export default {
       search: 'Lejátszás a keresésből',
 
       podcast: 'Lejátszás podcastról',
+      mix: 'Lejátszás mixből',
     },
     goToAlbum: 'Album',
     goToArtist: 'Előadó',
@@ -1334,6 +1337,43 @@ export default {
       'Az albumokat és listákat most nem sikerült betölteni. Próbáld újra később.',
     poweredBy:
       'Az előadók a Deezer hasonló előadóiból, az albumok a Deezerről és a Spotifyról, a listák mindkettőről származnak.',
+  },
+  mixes: {
+    title: 'Neked készült',
+    subtitle: 'Lejátszási listák abból, amit hallgatsz, mindig frissen.',
+    kicker: 'Mix',
+    failed: 'Nem sikerült betölteni a mixeidet',
+    howItWorks:
+      'Egy dal akkor számít meghallgatottnak, ha a fele (vagy négy perc) lejátszódott. A mixeidet csak te látod.',
+    saveAsPlaylist: 'Mentés lejátszási listaként',
+    emptyTitle: 'Még nincs itt semmi',
+    newBecause: 'Mert mostanában ezeket hallgatod: {names}',
+    on_repeat: {
+      title: 'Ismétlésen',
+      short: 'Amit mostanában a legtöbbet hallgatsz',
+      body: 'Az elmúlt 30 nap legtöbbet hallgatott dalai.',
+      empty: 'Hallgass dalokat a könyvtáradból, és itt megjelennek.',
+    },
+    forgotten: {
+      title: 'Elfeledett kedvencek',
+      short: 'Kedvelt dalok, amiket rég nem hallgattál',
+      body: 'Sokat hallgatott (vagy kedvelt) dalok, amiket két hónapja nem hallottál.',
+      empty:
+        'Itt jelennek meg a sokat hallgatott dalok, amiket két hónapja nem hallottál.',
+    },
+    unplayed: {
+      title: 'Sosem hallgatott',
+      short: 'Könyvtárbeli dalok, amiket még nem hallottál',
+      body: 'A könyvtáradban lévő, még sosem hallgatott dalok a legtöbbet hallgatott előadóidtól. Minden nap új válogatás.',
+      empty: 'A könyvtárad minden dalát meghallgattad már.',
+    },
+    new: {
+      title: 'Újdonságok neked',
+      short: 'Dalok, amik még nincsenek a könyvtáradban',
+      body: 'Dalok, amik még nincsenek meg, hasonlók a legtöbbet hallgatottakhoz, a YouTube Musicról.',
+      empty:
+        'Előbb hallgass dalokat a könyvtáradból: ez a mix a kedvenceidből indul.',
+    },
   },
   podcasts: {
     title: 'Podcastok',

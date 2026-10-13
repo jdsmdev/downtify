@@ -219,7 +219,7 @@ function startListenTracking() {
     if (played < listenThreshold(player.duration.value || track.duration))
       return
     counted = true
-    API.recordListen(artist).catch(() => {
+    API.recordListen(artist, track.file).catch(() => {
       // Best effort: one listen more or less barely moves the ranking.
     })
   })
