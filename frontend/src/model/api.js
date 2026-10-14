@@ -613,6 +613,10 @@ function getNewForYou() {
   return API.get('/api/mixes/new')
 }
 
+function getNewForKids() {
+  return API.get('/api/mixes/new/kids')
+}
+
 function getDailyMixes() {
   return API.get('/api/mixes/daily')
 }
@@ -881,6 +885,7 @@ export default {
   recordListen,
   getMixes,
   getNewForYou,
+  getNewForKids,
   getDailyMixes,
   clearListens,
   getBlockedArtists,

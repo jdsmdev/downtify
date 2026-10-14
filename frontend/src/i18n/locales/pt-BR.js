@@ -1340,6 +1340,16 @@ export default {
     saveAsPlaylist: 'Salvar como playlist',
     emptyTitle: 'Nada aqui ainda',
     newBecause: 'Porque você tem ouvido {names}',
+    kids: {
+      title: 'Mix infantil diário',
+      body: 'Uma seleção diária de músicas infantis da sua biblioteca: suas favoritas e outras que você ainda não ouviu.',
+    },
+    new_kids: {
+      title: 'Novidades para as crianças',
+      short: 'Músicas infantis que você ainda não tem',
+      body: 'Músicas infantis parecidas com as que você ouve ou curte, verificadas pelo gênero musical.',
+      empty: 'Ouça ou curta primeiro uma música infantil com gênero identificado. Só aparecem sugestões classificadas como música infantil.',
+    },
     dailyTitle: 'Seus Daily Mix',
     dailyBody:
       'Seus artistas favoritos agrupados por estilo, com músicas que você ama e algumas que ainda não ouviu. Uma seleção nova todo dia.',

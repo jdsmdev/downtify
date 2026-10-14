@@ -126,7 +126,7 @@
         </template>
 
         <template v-else>
-          <div v-if="store.newLoading.value" class="flex flex-col gap-2">
+          <div v-if="cardLoading" class="flex flex-col gap-2">
             <div
               v-for="n in 6"
               :key="n"
@@ -140,33 +140,33 @@
             </div>
           </div>
           <UiEmpty
-            v-else-if="store.newError.value"
+            v-else-if="cardError"
             icon="alert"
             :title="t('mixes.failed')"
-            :body="store.newError.value"
+            :body="cardError"
           >
-            <UiButton icon="refresh" @click="store.loadNew()">
+            <UiButton icon="refresh" @click="refreshFor(card)">
               {{ t('common.retry') }}
             </UiButton>
           </UiEmpty>
           <UiEmpty
-            v-else-if="store.newLoaded.value && !store.newSongs.value.length"
+            v-else-if="cardLoaded && !cardSongs.length"
             icon="wand"
             :title="t('mixes.emptyTitle')"
             :body="card.empty"
           />
           <template v-else-if="store.newSongs.value.length">
-            <p v-if="seedNames" class="text-[13px] text-muted">
-              {{ t('mixes.newBecause', { names: seedNames }) }}
+            <p v-if="cardSeedNames" class="text-[13px] text-muted">
+              {{ t('mixes.newBecause', { names: cardSeedNames }) }}
             </p>
             <div class="-mx-3 flex flex-col">
               <TrackDownPlayHeader />
               <SimilarTrackRow
-                v-for="(song, i) in store.newSongs.value"
+                v-for="(song, i) in cardSongs"
                 :key="`${song.artist}|${song.name}`"
                 :song="song"
                 :index="i"
-                :songs="store.newSongs.value"
+                :songs="cardSongs"
               />
             </div>
           </template>
@@ -217,7 +217,9 @@ const ICONS = {
   forgotten: 'clock',
   unplayed: 'sparkle',
   new: 'wand',
+  new_kids: 'wand',
   daily: 'music',
+  kids: 'music',
   decade: 'disc',
 }
 
@@ -243,7 +245,7 @@ function describe(mix) {
   const base = {
     ...mix,
     kind,
-    library: kind !== 'new',
+    library: !['new', 'new_kids'].includes(kind),
     icon: ICONS[kind] || 'playlist',
     covers: mix.covers || libraryCovers(mix.tracks),
     empty: '',
@@ -255,6 +257,23 @@ function describe(mix) {
       title: t('mixes.daily.title', { number: mix.number }),
       subtitle: names ? t('mixes.daily.artists', { names }) : tracks,
       body: t('mixes.daily.body', { names }),
+    }
+  }
+  if (kind === 'kids') {
+    return {
+      ...base,
+      title: t('mixes.kids.title'),
+      subtitle: tracks,
+      body: t('mixes.kids.body'),
+    }
+  }
+  if (kind === 'new_kids') {
+    return {
+      ...base,
+      title: t('mixes.new_kids.title'),
+      subtitle: tracks || t('mixes.new_kids.short'),
+      body: t('mixes.new_kids.body'),
+      empty: t('mixes.new_kids.empty'),
     }
   }
   if (kind === 'decade') {
@@ -288,6 +307,14 @@ const ownCards = computed(() => {
     id: 'new',
     tracks: songs,
     covers: [...new Set(newCovers)].slice(0, 4),
+  })
+  const kidsSongs = store.newKidsSongs.value
+  const kidsCovers = kidsSongs.map((song) => song.cover_url).filter(Boolean)
+  own.push({
+    id: 'new_kids',
+    kind: 'new_kids',
+    tracks: kidsSongs,
+    covers: [...new Set(kidsCovers)].slice(0, 4),
   })
   return own.map(describe)
 })
@@ -331,11 +358,6 @@ const shelves = computed(() =>
   ].filter((shelf) => shelf.show)
 )
 
-const anyLoading = computed(
-  () =>
-    store.loading.value || store.dailyLoading.value || store.newLoading.value
-)
-
 const mixId = computed(() => String(route.params.id || ''))
 const card = computed(() =>
   mixId.value
@@ -345,8 +367,40 @@ const card = computed(() =>
 
 const playableCount = computed(() => card.value?.tracks.length || 0)
 
-const seedNames = computed(() =>
-  joinNames(store.newSeeds.value.map((seed) => seed.artist), locale.value)
+const cardSongs = computed(() =>
+  card.value?.kind === 'new_kids'
+    ? store.newKidsSongs.value
+    : store.newSongs.value
+)
+const cardLoading = computed(() =>
+  card.value?.kind === 'new_kids'
+    ? store.newKidsLoading.value
+    : store.newLoading.value
+)
+const cardLoaded = computed(() =>
+  card.value?.kind === 'new_kids'
+    ? store.newKidsLoaded.value
+    : store.newLoaded.value
+)
+const cardError = computed(() =>
+  card.value?.kind === 'new_kids'
+    ? store.newKidsError.value
+    : store.newError.value
+)
+const cardSeedNames = computed(() => {
+  const seeds =
+    card.value?.kind === 'new_kids'
+      ? store.newKidsSeeds.value
+      : store.newSeeds.value
+  return joinNames(seeds.map((seed) => seed.artist), locale.value)
+})
+
+const anyLoading = computed(
+  () =>
+    store.loading.value ||
+    store.dailyLoading.value ||
+    store.newLoading.value ||
+    store.newKidsLoading.value
 )
 
 function contextFor(item) {
@@ -380,12 +434,14 @@ function togglePlay() {
 
 function loadingFor(item) {
   if (item.kind === 'new') return store.newLoading.value
+  if (item.kind === 'new_kids') return store.newKidsLoading.value
   if (item.kind === 'daily') return store.dailyLoading.value
   return store.loading.value
 }
 
 function refreshFor(item) {
   if (item.kind === 'new') store.loadNew()
+  else if (item.kind === 'new_kids') store.loadNewKids()
   else if (item.kind === 'daily') store.loadDaily()
   else store.load()
 }
@@ -394,6 +450,7 @@ function refreshAll() {
   store.load()
   store.loadDaily()
   store.loadNew()
+  store.loadNewKids()
 }
 
 onMounted(() => {
@@ -402,6 +459,9 @@ onMounted(() => {
     store.loadDaily()
   }
   if (!store.newLoaded.value && !store.newLoading.value) store.loadNew()
+  if (!store.newKidsLoaded.value && !store.newKidsLoading.value) {
+    store.loadNewKids()
+  }
 })
 
 // Opening a mix page shows the latest: listens keep coming in.

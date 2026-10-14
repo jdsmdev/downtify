@@ -936,7 +936,7 @@ RULES: list[tuple[frozenset[str], re.Pattern[str], str]] = [
             CLIENT,
         ),
         (_ALL, r'^/api/discover/blocked$', CLIENT),
-        (_READ, r'^/api/mixes(/new|/daily)?$', CLIENT),
+        (_READ, r'^/api/mixes(/new(/kids)?|/daily)?$', CLIENT),
         (_READ, r'^/api/podcasts/', CLIENT),
         (
             _m('POST'),

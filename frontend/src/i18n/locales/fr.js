@@ -1364,6 +1364,16 @@ export default {
     saveAsPlaylist: 'Enregistrer comme playlist',
     emptyTitle: 'Rien pour l’instant',
     newBecause: 'Parce que vous écoutez {names}',
+    kids: {
+      title: 'Mix enfants du jour',
+      body: 'Une sélection quotidienne de musique pour enfants de votre bibliothèque : vos titres favoris et des titres encore inédits.',
+    },
+    new_kids: {
+      title: 'Nouveautés pour les enfants',
+      short: 'Des chansons pour enfants à découvrir',
+      body: 'Des chansons pour enfants proches de celles que vous écoutez ou aimez, vérifiées par genre musical.',
+      empty: 'Écoutez ou aimez un titre pour enfants avec un genre renseigné. Seuls les titres identifiés comme musique pour enfants sont proposés.',
+    },
     dailyTitle: 'Vos Daily Mix',
     dailyBody:
       'Vos artistes préférés regroupés par style, avec des titres que vous aimez et quelques-uns jamais écoutés. Une nouvelle sélection chaque jour.',

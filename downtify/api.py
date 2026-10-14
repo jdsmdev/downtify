@@ -249,10 +249,10 @@ for downloads stay shared, and files are never stored twice.
   ``unplayed``, then ``decade_<year>`` (``kind`` ``decade``, plus
   ``decade``), tracks in the ``GET /tracks`` shape), ``GET
   /api/mixes/daily`` (Spotify-style Daily Mixes - ``{mixes: [{id, kind,
-  number, artists, tracks}], partial}``) and ``GET
-  /api/mixes/new`` (songs not in the library like the user's current
-  favourites - ``{seeds: [{artist, title}], tracks, partial}``, tracks
-  as in ``GET /api/similar/tracks``) - see ``downtify.mixes``
+    number, artists, tracks}], partial}``), ``GET /api/mixes/new`` (non-kids
+    songs like the user's current favourites), and ``GET
+    /api/mixes/new/kids`` (children's songs like their kids' favourites,
+    verified by genre) - see ``downtify.mixes``
  * ``GET  /api/preview`` (a song's 30 s preview clip from Deezer, for a
    song with no ``preview_url`` of its own - ``?artist=&title=&duration=``,
    response ``{preview_url}``, ``""`` when Deezer has no matching song)
@@ -335,6 +335,7 @@ from . import (
     cover_sources,
     deezer,
     integration_check,
+    itunes,
     library_import,
     library_upgrade,
     lyrics,
@@ -7064,8 +7065,9 @@ async def mixes_endpoint(request: Request) -> dict[str, Any]:
 @router.get('/api/mixes/daily')
 async def daily_mixes_endpoint(request: Request) -> dict[str, Any]:
     """Spotify-style Daily Mixes (see ``downtify.mixes.daily_mixes``):
-    ``{mixes: [{id, kind, number, artists, tracks}], partial}``. Empty
-    until something has been played or liked."""
+    ``{mixes: [{id, kind, number, artists, tracks}], partial}``. A
+    ``daily_kids`` mix also appears when child-focused genre tags exist,
+    even before the user has any listening history."""
 
     store = _require_discover()
     entries, plays, user_id = await asyncio.to_thread(_mix_inputs, request)
@@ -7083,10 +7085,9 @@ async def daily_mixes_endpoint(request: Request) -> dict[str, Any]:
 
 @router.get('/api/mixes/new')
 async def new_for_you_endpoint(request: Request) -> dict[str, Any]:
-    """Songs that aren't in the library, like the user's current
-    favourites - YouTube Music's radio mix of the top "On repeat" songs
-    (see ``downtify.mixes.new_for_you``). ``seeds`` is empty (and so is
-    ``tracks``) until something has been played."""
+    """Non-kids songs like the user's current favourites. YouTube Music's
+    radio mix of the top "On repeat" songs; iTunes-classified kids tracks
+    are excluded. Unknown genres aren't guessed from title or artist."""
 
     entries, plays, _user_id = await asyncio.to_thread(_mix_inputs, request)
     seeds = mixes.new_seeds(entries, plays)
@@ -7098,7 +7099,39 @@ async def new_for_you_endpoint(request: Request) -> dict[str, Any]:
             artist, title, limit=mixes.NEW_PER_SEED
         )
 
-    return await asyncio.to_thread(mixes.new_for_you, seeds, entries, similar)
+    return await asyncio.to_thread(
+        mixes.new_for_you,
+        seeds,
+        entries,
+        similar,
+        genre_for=itunes.fetch_genre,
+    )
+
+
+@router.get('/api/mixes/new/kids')
+async def new_for_kids_endpoint(request: Request) -> dict[str, Any]:
+    """Children's songs like the user's played or liked library kids'
+    tracks. Only radio results with a child-focused iTunes genre are kept."""
+
+    entries, plays, user_id = await asyncio.to_thread(_mix_inputs, request)
+    liked = await asyncio.to_thread(_mix_likes, user_id)
+    seeds = mixes.new_kids_seeds(entries, plays, liked)
+    if not seeds:
+        return {'seeds': [], 'tracks': [], 'partial': False}
+
+    def similar(artist: str, title: str) -> dict[str, Any]:
+        return providers.youtube_similar_tracks(
+            artist, title, limit=mixes.NEW_PER_SEED
+        )
+
+    return await asyncio.to_thread(
+        mixes.new_for_you,
+        seeds,
+        entries,
+        similar,
+        genre_for=itunes.fetch_genre,
+        kids_only=True,
+    )
 
 
 def _played_at(value: Any) -> Optional[datetime]:

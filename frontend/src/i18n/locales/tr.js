@@ -1343,6 +1343,16 @@ export default {
     saveAsPlaylist: 'Çalma listesi olarak kaydet',
     emptyTitle: 'Burada henüz bir şey yok',
     newBecause: 'Son zamanlarda {names} dinlediğin için',
+    kids: {
+      title: 'Günlük çocuk müzikleri mixi',
+      body: 'Kitaplığındaki çocuk şarkılarından günlük bir seçki: sevdiklerin ve henüz dinlemediklerin.',
+    },
+    new_kids: {
+      title: 'Çocuklar için yeni',
+      short: 'Kitaplığında olmayan çocuk şarkıları',
+      body: 'Dinlediğin veya beğendiğin çocuk şarkılarına benzer, tür bilgisiyle doğrulanmış şarkılar.',
+      empty: 'Önce tür etiketi olan bir çocuk şarkısı dinle veya beğen. Yalnızca çocuk müziği olarak tanımlananlar önerilir.',
+    },
     dailyTitle: 'Günlük mixlerin',
     dailyBody:
       'Tarzına göre gruplanmış favori sanatçıların: sevdiğin şarkılar ve henüz dinlemediğin birkaçı. Her gün yeni bir seçki.',

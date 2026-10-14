@@ -169,6 +169,53 @@ def test_new_for_you_interleaves_seeds_and_skips_the_library():
     assert result['partial'] is True
 
 
+def test_new_for_you_filters_children_by_genre():
+    seeds = [{'artist': 'Kids Artist', 'title': 'Kids Song'}]
+    songs = [
+        {'name': 'New Kids Song', 'artists': ['Kids Band']},
+        {'name': 'New Pop Song', 'artists': ['Pop Band']},
+        {'name': 'Unclassified Song', 'artists': ['Unknown Band']},
+    ]
+    genres = {
+        'New Kids Song': "Children's Music",
+        'New Pop Song': 'Pop',
+        'Unclassified Song': '',
+    }
+
+    def similar(_artist: str, _title: str) -> dict[str, Any]:
+        return {'tracks': songs}
+
+    def genre_for(song: dict[str, Any]) -> str:
+        return genres[song['name']]
+
+    regular = mixes.new_for_you(seeds, [], similar, genre_for=genre_for)
+    kids = mixes.new_for_you(
+        seeds, [], similar, genre_for=genre_for, kids_only=True
+    )
+
+    assert [song['name'] for song in regular['tracks']] == ['New Pop Song']
+    assert [song['name'] for song in kids['tracks']] == ['New Kids Song']
+    assert regular['partial'] is True
+    assert kids['partial'] is True
+
+
+def test_new_kids_seeds_use_only_played_or_liked_kids_tracks():
+    entries = [
+        _tagged('kids-a.mp3', 'Kids A', genre="Children's Music", title='A'),
+        _tagged('kids-b.mp3', 'Kids B', genre='Nursery Rhymes', title='B'),
+        _tagged('pop.mp3', 'Pop', genre='Pop', title='Pop'),
+        _tagged('unheard.mp3', 'Kids C', genre='Kids', title='Unheard'),
+    ]
+    plays = _plays('kids-a.mp3', 1, 2) + _plays('pop.mp3', 1, 2, 3)
+
+    seeds = mixes.new_kids_seeds(entries, plays, {'kids-b.mp3'}, NOW)
+
+    assert seeds == [
+        {'artist': 'Kids B', 'title': 'B'},
+        {'artist': 'Kids A', 'title': 'A'},
+    ]
+
+
 def _tagged(file: str, artist: str, **tags: str) -> dict[str, Any]:
     return {**_entry(file, artist), **tags}
 
@@ -258,6 +305,90 @@ def test_decade_mixes_follow_the_most_played_decades():
     assert len(picked[0][1]) == 25
 
 
+def test_kids_genres_are_classified_without_matching_song_titles():
+    assert mixes.is_kids_track(
+        _tagged('a.mp3', 'Artist', genre="Children's Music")
+    )
+    assert mixes.is_kids_track(
+        _tagged('b.mp3', 'Artist', genre='Música infantil')
+    )
+    assert mixes.is_kids_track(
+        _tagged('c.mp3', 'Artist', genre='Pop; Nursery Rhymes')
+    )
+    assert not mixes.is_kids_track(
+        _tagged(
+            'children.mp3', 'Artist', genre='Pop', title='Children of the Sun'
+        )
+    )
+
+
+def test_general_mixes_and_new_seeds_leave_out_kids_tracks():
+    kids = [
+        _tagged(
+            f'kid{i}.mp3',
+            'Children Artist',
+            genre="Children's Music",
+            year='1995',
+        )
+        for i in range(22)
+    ]
+    adults = [
+        _tagged(f'adult{i}.mp3', f'Adult {i}', genre='Pop', year='1995')
+        for i in range(22)
+    ]
+    entries = kids + adults
+    plays = _plays('kid0.mp3', 1, 2, 100, 101, 102)
+    plays += _plays('adult0.mp3', 1, 2, 100, 101, 102)
+
+    built = mixes.build_mixes(entries, plays, [], NOW)
+    seeds = mixes.new_seeds(entries, plays, NOW)
+
+    assert all(
+        not mixes.is_kids_track(track)
+        for mix in built
+        for track in mix['tracks']
+    )
+    assert seeds == [{'artist': 'Adult 0', 'title': 'adult0.mp3'}]
+
+
+def test_daily_mixes_make_a_separate_kids_mix_without_regular_seeds():
+    kids = [
+        _tagged(f'kid{i}.mp3', 'Children Artist', genre="Children's Music")
+        for i in range(8)
+    ]
+
+    def related_for(_names: list[str]) -> tuple[dict[str, Any], bool]:
+        raise AssertionError('no regular artists need a related lookup')
+
+    result = mixes.daily_mixes(kids, [], [], related_for, NOW)
+
+    assert [mix['id'] for mix in result['mixes']] == ['daily_kids']
+    assert len(result['mixes'][0]['tracks']) == len(kids)
+    assert all(
+        mixes.is_kids_track(track) for track in result['mixes'][0]['tracks']
+    )
+
+
+def test_daily_mix_keeps_kids_out_of_regular_mix_and_adds_their_mix():
+    kids = [
+        _tagged(f'kid{i}.mp3', 'Children Artist', genre="Children's Music")
+        for i in range(8)
+    ]
+    adults = [
+        _tagged(f'pop{i}.mp3', 'Adult Artist', genre='Pop') for i in range(12)
+    ]
+    plays = _plays('kid0.mp3', 1, 2) + _plays('pop0.mp3', 1, 2)
+
+    result = mixes.daily_mixes(
+        kids + adults, plays, [], lambda _names: ({}, False), NOW
+    )
+    by_id = {mix['id']: mix['tracks'] for mix in result['mixes']}
+
+    assert set(by_id) == {'daily_1', 'daily_kids'}
+    assert all(not mixes.is_kids_track(track) for track in by_id['daily_1'])
+    assert all(mixes.is_kids_track(track) for track in by_id['daily_kids'])
+
+
 # ── endpoints ─────────────────────────────────────────────────────────
 
 
@@ -312,6 +443,64 @@ def test_new_for_you_endpoint_is_empty_without_listens(mix_state):
         'tracks': [],
         'partial': False,
     }
+
+
+def test_new_for_kids_endpoint_returns_only_verified_kids_genres(
+    mix_state, monkeypatch
+):
+    child_entry = _tagged(
+        'kids.mp3', 'Kids Artist', genre="Children's Music", title='Kids Song'
+    )
+    monkeypatch.setattr(
+        api,
+        'listing_for_request',
+        lambda _ctx, allowed_keys=None: [child_entry],
+    )
+    monkeypatch.setattr(
+        api,
+        'resolve_library_file',
+        lambda file, _ctx: Path(file) if file == 'kids.mp3' else None,
+    )
+    monkeypatch.setattr(
+        api.providers,
+        'youtube_similar_tracks',
+        lambda *_args, **_kwargs: {
+            'tracks': [
+                {'name': 'New Kids', 'artists': ['Kids Band']},
+                {'name': 'New Pop', 'artists': ['Pop Band']},
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        api.itunes,
+        'fetch_genre',
+        lambda song: (
+            "Children's Music" if song['name'] == 'New Kids' else 'Pop'
+        ),
+    )
+    mix_state.record_listen(
+        'Kids Artist', when=NOW, user_id=1, file='kids.mp3'
+    )
+
+    result = asyncio.run(api.new_for_kids_endpoint(_request()))
+
+    assert [song['name'] for song in result['tracks']] == ['New Kids']
+
+
+def test_new_for_kids_endpoint_is_empty_without_played_or_liked_kids_tracks(
+    mix_state, monkeypatch
+):
+    monkeypatch.setattr(
+        api,
+        'listing_for_request',
+        lambda _ctx, allowed_keys=None: [
+            _tagged('pop.mp3', 'Pop', genre='Pop', title='Pop Song')
+        ],
+    )
+
+    result = asyncio.run(api.new_for_kids_endpoint(_request()))
+
+    assert result == {'seeds': [], 'tracks': [], 'partial': False}
 
 
 def test_daily_mixes_endpoint_asks_for_the_favourites_related_artists(
