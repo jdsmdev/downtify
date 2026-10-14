@@ -1348,6 +1348,16 @@ export default {
     saveAsPlaylist: 'Mentés lejátszási listaként',
     emptyTitle: 'Még nincs itt semmi',
     newBecause: 'Mert mostanában ezeket hallgatod: {names}',
+    kids: {
+      title: 'Napi gyerekzene mix',
+      body: 'Napi válogatás a könyvtárad gyerekzenéiből: kedvenceid és olyan dalok, amelyeket még nem hallottál.',
+    },
+    new_kids: {
+      title: 'Újdonságok gyerekeknek',
+      short: 'Gyerekdalok, amelyek még nincsenek meg',
+      body: 'A gyerekek általad hallgatott vagy kedvelt dalaihoz hasonló, műfaj alapján ellenőrzött zenék.',
+      empty: 'Előbb hallgass vagy kedvelj egy műfajcímkével ellátott gyerekdalt. Csak gyerekzeneként azonosított dalok jelennek meg.',
+    },
     dailyTitle: 'Napi mixeid',
     dailyBody:
       'Kedvenc előadóid hangzás szerint csoportosítva: dalok, amiket szeretsz, és néhány, amit még nem hallottál. Minden nap új válogatás.',

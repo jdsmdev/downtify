@@ -22,12 +22,14 @@ written to disk, so they never go stale and never touch the library:
   shared genre tags), each mix their most played songs with a share of
   library songs from that cluster the user hasn't played yet, a new pick
   every day (see :func:`daily_mixes`; Deezer's answers are cached).
+* **Kids Daily Mix** - explicitly child-focused genre-tagged tracks,
+  excluded from the other library mixes, played/liked songs first.
 * **Decades** - "Your 1990s" and so on: the songs of the decades the
   user listens to the most, by the year tag.
 
-All but "New for you" are lists of library rows (the ``GET /tracks``
-shape), so they play like any playlist; "New for you" is downloadable
-song rows, like ``GET /api/similar/tracks``.
+All but "New for you" and "New for your kids" are lists of library rows
+(the ``GET /tracks`` shape), so they play like any playlist; both new-song
+mixes are downloadable song rows, like ``GET /api/similar/tracks``.
 """
 
 from __future__ import annotations
@@ -35,6 +37,7 @@ from __future__ import annotations
 import hashlib
 import math
 import re
+import unicodedata
 from collections.abc import Callable, Collection, Iterable
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -81,15 +84,43 @@ DECADE_MIXES = 4
 DECADE_MIN_TRACKS = 20
 #: Songs per artist in a decade mix, at most.
 DECADE_PER_ARTIST = 4
+#: Familiar/fresh balance for the kids' mix.
+KIDS_FAMILIAR_SHARE = 0.6
 
 MIX_IDS = ('on_repeat', 'forgotten', 'unplayed')
 
 _GENRE_SPLIT = re.compile(r'[;,/]')
 _YEAR = re.compile(r'\s*(\d{4})')
+_KIDS_GENRES = frozenset({
+    'child',
+    'children',
+    'children s',
+    'children s music',
+    'children s songs',
+    'children music',
+    'kids',
+    'kids music',
+    'kids songs',
+    'nursery rhyme',
+    'nursery rhymes',
+    'lullaby',
+    'lullabies',
+    'preschool music',
+    'music for children',
+    'music for kids',
+    'musica infantil',
+    'canciones infantiles',
+    'musique pour enfants',
+    'musique enfantine',
+    'musica per bambini',
+    'kinderlieder',
+    'kindermusik',
+})
 
 #: ``(artist, track) -> {tracks: [...]}``, like
 #: :func:`downtify.providers.youtube_similar_tracks`.
 SimilarFn = Callable[[str, str], dict[str, Any]]
+GenreFn = Callable[[dict[str, Any]], str]
 #: ``names -> ({artist key: related artists}, partial)``, like
 #: :func:`downtify.discover.related_for_artists`.
 RelatedFn = Callable[[list[str]], tuple[dict[str, list[dict[str, Any]]], bool]]
@@ -115,6 +146,38 @@ def _days(now: datetime, then: datetime) -> float:
 
 def _norm(path: Any) -> str:
     return str(path or '').strip().replace('\\', '/')
+
+
+def _genre_key(value: Any) -> str:
+    folded = unicodedata.normalize('NFKD', str(value or '').casefold())
+    folded = ''.join(c for c in folded if not unicodedata.combining(c))
+    return ' '.join(re.sub(r'[^a-z0-9]+', ' ', folded).split())
+
+
+def is_kids_genre(value: Any) -> bool:
+    """Whether a genre label explicitly describes children's music."""
+
+    return _genre_key(value) in _KIDS_GENRES
+
+
+def is_kids_track(entry: dict[str, Any]) -> bool:
+    """Whether a library track has an explicitly child-focused genre tag.
+
+    Classification intentionally uses genre tags only: artist and title
+    keywords would misclassify ordinary songs with child-related names.
+    """
+
+    return any(
+        is_kids_genre(tag)
+        for tag in _GENRE_SPLIT.split(str(entry.get('genre') or ''))
+        if tag.strip()
+    )
+
+
+def _regular_entries(
+    entries: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return [entry for entry in entries if not is_kids_track(entry)]
 
 
 def track_stats(
@@ -308,6 +371,7 @@ def build_mixes(
     """
 
     now = now or _now()
+    entries = _regular_entries(entries)
     liked_set = {_norm(path) for path in liked}
     stats = track_stats(plays, now)
     by_file = {_norm(entry.get('file')): entry for entry in entries}
@@ -548,7 +612,7 @@ def daily_mixes(
 ) -> dict[str, Any]:
     """Spotify-style Daily Mixes: ``{mixes, partial}``.
 
-    The user's :data:`DAILY_SEEDS` heaviest artists
+    The user's :data:`DAILY_SEEDS` heaviest non-kids artists
     (:func:`artist_weights`) are grouped into clusters of similar music
     (:func:`cluster_artists`); each cluster's mix is about
     :data:`DAILY_FAMILIAR_SHARE` songs the user already plays or likes,
@@ -564,14 +628,39 @@ def daily_mixes(
     """
 
     now = now or _now()
+    kids_entries = [entry for entry in entries if is_kids_track(entry)]
+    regular_entries = _regular_entries(entries)
     liked_set = {_norm(path) for path in liked}
     stats = track_stats(plays, now)
-    weights = artist_weights(entries, stats, liked_set, now)
+    mixes, partial = _regular_daily_mixes(
+        regular_entries, stats, liked_set, related_for, now
+    )
+    kids_files = kids_daily_mix(kids_entries, stats, liked_set, now)
+    if kids_files:
+        kids_by_file = {
+            _norm(entry.get('file')): entry for entry in kids_entries
+        }
+        mixes.append({
+            'id': 'daily_kids',
+            'kind': 'kids',
+            'artists': [],
+            'tracks': [kids_by_file[file] for file in kids_files],
+        })
+    return {'mixes': mixes, 'partial': partial}
+
+
+def _regular_daily_mixes(
+    entries: list[dict[str, Any]],
+    stats: dict[str, dict[str, Any]],
+    liked: Collection[str],
+    related_for: RelatedFn,
+    now: datetime,
+) -> tuple[list[dict[str, Any]], bool]:
+    weights = artist_weights(entries, stats, liked, now)
     seeds = _favourite_artists(weights)
     if not seeds:
-        return {'mixes': [], 'partial': False}
-    related, partial = related_for([name for _key, name, _w in seeds])
-
+        return [], False
+    related, partial = related_for([name for _key, name, _weight in seeds])
     by_file, by_artist, names = _index_by_artist(entries)
     picked = _cluster_files(
         cluster_artists(
@@ -579,7 +668,7 @@ def daily_mixes(
         ),
         by_artist,
         stats,
-        liked_set,
+        liked,
         weights,
         now.date().isoformat(),
     )
@@ -593,7 +682,60 @@ def daily_mixes(
         }
         for number, (keys, files) in enumerate(picked, start=1)
     ]
-    return {'mixes': mixes, 'partial': partial}
+    return mixes, partial
+
+
+def kids_daily_mix(
+    entries: Iterable[dict[str, Any]],
+    stats: dict[str, dict[str, Any]],
+    liked: Collection[str],
+    now: Optional[datetime] = None,
+    limit: int = MIX_SIZE,
+) -> list[str]:
+    """Daily pick of explicitly child-focused library tracks.
+
+    Played or liked tracks lead, then never-played kids' tracks fill the
+    rest; a daily deterministic shuffle rotates tracks within each group.
+    All eligible songs are included when the library has fewer than the
+    usual mix size, with no minimum-count threshold.
+    """
+
+    now = now or _now()
+    day = now.date().isoformat()
+    eligible = [
+        (_norm(entry.get('file')), album_artist_of(entry).casefold())
+        for entry in entries
+        if is_kids_track(entry) and _norm(entry.get('file'))
+    ]
+    if not eligible or limit <= 0:
+        return []
+    limit = min(limit, len(eligible))
+    artists = {artist for _file, artist in eligible}
+    per_artist = max(DAILY_PER_ARTIST, math.ceil(limit / len(artists)))
+    familiar: list[tuple[float, str, str]] = []
+    fresh: list[tuple[float, str, str]] = []
+    affinity: dict[str, float] = {}
+    for file, artist in eligible:
+        affinity[artist] = affinity.get(artist, 0.0) + int(
+            stats.get(file, {}).get('plays', 0)
+        )
+    for file, artist in eligible:
+        plays = int(stats.get(file, {}).get('plays', 0))
+        if plays or file in liked:
+            score = math.log1p(plays) + (1.0 if file in liked else 0.0)
+            familiar.append((score + _jitter(day, file), artist, file))
+        else:
+            fresh.append((
+                math.log1p(affinity[artist]) + _jitter(day, file),
+                artist,
+                file,
+            ))
+    target_familiar = round(limit * KIDS_FAMILIAR_SHARE)
+    known = _capped(familiar, per_artist, target_familiar)
+    new = _capped(fresh, per_artist, limit - len(known))
+    if len(known) + len(new) < limit:
+        known = _capped(familiar, per_artist, limit - len(new))
+    return _interleave(known, new)
 
 
 def _cluster_files(
@@ -629,6 +771,7 @@ def new_seeds(
     songs (all-time favourites when nothing was played lately), one per
     artist."""
 
+    entries = _regular_entries(entries)
     stats = track_stats(plays, now)
     by_file = {_norm(entry.get('file')): entry for entry in entries}
     visible = {f: s for f, s in stats.items() if f in by_file}
@@ -650,6 +793,48 @@ def new_seeds(
     return seeds
 
 
+def new_kids_seeds(
+    entries: list[dict[str, Any]],
+    plays: Iterable[dict[str, Any]],
+    liked: Collection[str],
+    now: Optional[datetime] = None,
+    limit: int = NEW_SEEDS,
+) -> list[dict[str, str]]:
+    """The most-played or liked kids' tracks, one seed per artist."""
+
+    kids_entries = [entry for entry in entries if is_kids_track(entry)]
+    stats = track_stats(plays, now)
+    liked_set = {_norm(path) for path in liked}
+    ranked: list[tuple[float, str, str, str]] = []
+    for entry in kids_entries:
+        file = _norm(entry.get('file'))
+        entry_stats = stats.get(file)
+        if not file or (entry_stats is None and file not in liked_set):
+            continue
+        plays_count = int((entry_stats or {}).get('plays') or 0)
+        recent = float((entry_stats or {}).get('recent') or 0.0)
+        score = (
+            recent
+            + math.log1p(plays_count)
+            + (3.0 if file in liked_set else 0.0)
+        )
+        artist = str(entry.get('artist') or '').split(';')[0].strip()
+        title = str(entry.get('title') or '').strip()
+        if artist and title:
+            ranked.append((score, artist.casefold(), artist, title))
+    ranked.sort(key=lambda row: (-row[0], row[1], row[3].casefold()))
+    seeds: list[dict[str, str]] = []
+    artists: set[str] = set()
+    for _score, artist_key_value, artist, title in ranked:
+        if artist_key_value in artists:
+            continue
+        artists.add(artist_key_value)
+        seeds.append({'artist': artist, 'title': title})
+        if len(seeds) >= limit:
+            break
+    return seeds
+
+
 def _song_key_of(song: dict[str, Any]) -> str:
     artists = song.get('artists')
     artist = (
@@ -665,12 +850,18 @@ def new_for_you(
     entries: Iterable[dict[str, Any]],
     similar: SimilarFn,
     limit: int = MIX_SIZE,
+    *,
+    genre_for: Optional[GenreFn] = None,
+    kids_only: bool = False,
 ) -> dict[str, Any]:
     """Songs like the *seeds* that aren't in the library.
 
     Each seed's similar songs are interleaved, so every favourite gets a
-    say near the top; library songs and repeats are dropped. A seed
-    YouTube can't answer for is skipped (``partial`` says so).
+    say near the top; library songs and repeats are dropped. When
+    *genre_for* is supplied, regular suggestions must have a known
+    non-kids genre; *kids_only* keeps only known child-focused genres.
+    Unknown genres aren't guessed from titles or artists.
+    A seed YouTube can't answer for is skipped (``partial`` says so).
     """
 
     owned = {
@@ -697,6 +888,16 @@ def new_for_you(
             song = songs[position]
             key = _song_key_of(song)
             if key == '|' or key in owned or key in seen:
+                continue
+            if genre_for is not None:
+                genre = str(genre_for(song) or '').strip()
+                if not genre:
+                    partial = True
+                    continue
+                child_focused = is_kids_genre(genre)
+                if child_focused != kids_only:
+                    continue
+            elif kids_only:
                 continue
             seen.add(key)
             tracks.append(song)

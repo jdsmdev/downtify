@@ -1,0 +1,37 @@
+services:
+  mydowntify:
+    container_name: mydowntify
+    deploy:
+      resources:
+        limits:
+          cpus: "4.00"
+          memory: 6.15GB
+        reservations:
+          memory: 2GB
+    environment:
+      - PGID=1001
+      - PUID=1000
+      - TZ=$TZ
+    image: mydowntify:1.0.1
+    network_mode: bridge
+    ports:
+      - protocol: tcp
+        published: "8582"
+        target: 8000
+    restart: unless-stopped
+    volumes:
+      - source: /media/NAS-1/Media/Music
+        target: /downloads
+        type: bind
+      - source: /DATA/AppData/downtify/data
+        target: /data
+        type: bind
+x-casaos:
+  hostname: ""
+  icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@gh-pages/apps/org.icewhale.downtify/assets/icon.svg
+  index: /
+  main: mydowntify
+  port_map: "8582"
+  scheme: http
+  title:
+    custom: Música

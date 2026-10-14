@@ -25,6 +25,13 @@ const newLoading = ref(false)
 const newLoaded = ref(false)
 const newError = ref('')
 
+const newKidsSongs = shallowRef([])
+const newKidsSeeds = shallowRef([])
+const newKidsPartial = ref(false)
+const newKidsLoading = ref(false)
+const newKidsLoaded = ref(false)
+const newKidsError = ref('')
+
 function errorText(err) {
   return err?.response?.data?.detail || err?.message || 'failed'
 }
@@ -96,6 +103,22 @@ async function loadNew() {
   }
 }
 
+async function loadNewKids() {
+  newKidsLoading.value = true
+  newKidsError.value = ''
+  try {
+    const res = await API.getNewForKids()
+    newKidsSongs.value = (res.data?.tracks || []).map(toSong)
+    newKidsSeeds.value = res.data?.seeds || []
+    newKidsPartial.value = Boolean(res.data?.partial)
+    newKidsLoaded.value = true
+  } catch (err) {
+    newKidsError.value = errorText(err)
+  } finally {
+    newKidsLoading.value = false
+  }
+}
+
 function findMix(id) {
   return (
     mixes.value.find((mix) => mix.id === id) ||
@@ -120,9 +143,16 @@ export function useMixes() {
     newLoading,
     newLoaded,
     newError,
+    newKidsSongs,
+    newKidsSeeds,
+    newKidsPartial,
+    newKidsLoading,
+    newKidsLoaded,
+    newKidsError,
     load,
     loadDaily,
     loadNew,
+    loadNewKids,
     findMix,
   }
 }

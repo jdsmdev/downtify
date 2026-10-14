@@ -1315,6 +1315,16 @@ export default {
     saveAsPlaylist: 'Save as playlist',
     emptyTitle: 'Nothing here yet',
     newBecause: 'Because you’ve been playing {names}',
+    kids: {
+      title: 'Kids Daily Mix',
+      body: 'A fresh daily mix of children’s music in your library, led by songs played or liked and filled with tracks you haven’t played yet.',
+    },
+    new_kids: {
+      title: 'New for your kids',
+      short: 'Children’s songs not in your library yet',
+      body: 'Children’s songs similar to the kids’ tracks you play or like, checked against music genres.',
+      empty: 'Play or like a tagged children’s song first. Suggestions are limited to songs identified as children’s music.',
+    },
     dailyTitle: 'Your Daily Mixes',
     dailyBody:
       'Your favourite artists grouped by sound, with songs you love and a few you haven’t played yet. A new pick every day.',
