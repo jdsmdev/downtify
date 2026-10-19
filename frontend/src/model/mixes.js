@@ -1,8 +1,5 @@
-// Mixes: playlists the server builds from what the user plays - see
-// downtify/mixes.py. "On repeat", "Forgotten favourites", "Never
-// played", the decade mixes and the Daily Mixes are library tracks; "New
-// for you" is songs not in the library yet, played (streamed) and
-// downloaded like the Similar page's.
+// Mixes: playlists the server rebuilds every day from what the user
+// plays - see downtify/mix_playlists.py.
 import { ref, shallowRef } from 'vue'
 
 import API from '/src/model/api'
@@ -18,39 +15,8 @@ const dailyLoading = ref(false)
 const dailyLoaded = ref(false)
 const dailyError = ref('')
 
-const newSongs = shallowRef([])
-const newSeeds = shallowRef([])
-const newPartial = ref(false)
-const newLoading = ref(false)
-const newLoaded = ref(false)
-const newError = ref('')
-
-const newKidsSongs = shallowRef([])
-const newKidsSeeds = shallowRef([])
-const newKidsPartial = ref(false)
-const newKidsLoading = ref(false)
-const newKidsLoaded = ref(false)
-const newKidsError = ref('')
-
 function errorText(err) {
   return err?.response?.data?.detail || err?.message || 'failed'
-}
-
-// The Similar page's row shape, so SimilarTrackRow can show them.
-function toSong(item) {
-  return {
-    song_id: item.song_id || '',
-    name: item.name || '',
-    artists: Array.isArray(item.artists)
-      ? item.artists
-      : [item.artist].filter(Boolean),
-    artist: item.artist || '',
-    album_name: item.album_name || '',
-    cover_url: item.cover_url || '',
-    duration: item.duration || 0,
-    url: item.url || '',
-    match: item.match || 0,
-  }
 }
 
 // A library mix as the page shows it: the server's fields, tracks ready
@@ -59,11 +25,11 @@ function toMix(mix) {
   return { ...mix, tracks: (mix.tracks || []).map(normalizeTrack) }
 }
 
-async function load() {
+async function load(refresh = false) {
   loading.value = true
   error.value = ''
   try {
-    const res = await API.getMixes()
+    const res = await API.getMixes(refresh)
     mixes.value = (res.data?.mixes || []).map(toMix)
     loaded.value = true
   } catch (err) {
@@ -73,49 +39,17 @@ async function load() {
   }
 }
 
-async function loadDaily() {
+async function loadDaily(refresh = false) {
   dailyLoading.value = true
   dailyError.value = ''
   try {
-    const res = await API.getDailyMixes()
+    const res = await API.getDailyMixes(refresh)
     daily.value = (res.data?.mixes || []).map(toMix)
     dailyLoaded.value = true
   } catch (err) {
     dailyError.value = errorText(err)
   } finally {
     dailyLoading.value = false
-  }
-}
-
-async function loadNew() {
-  newLoading.value = true
-  newError.value = ''
-  try {
-    const res = await API.getNewForYou()
-    newSongs.value = (res.data?.tracks || []).map(toSong)
-    newSeeds.value = res.data?.seeds || []
-    newPartial.value = Boolean(res.data?.partial)
-    newLoaded.value = true
-  } catch (err) {
-    newError.value = errorText(err)
-  } finally {
-    newLoading.value = false
-  }
-}
-
-async function loadNewKids() {
-  newKidsLoading.value = true
-  newKidsError.value = ''
-  try {
-    const res = await API.getNewForKids()
-    newKidsSongs.value = (res.data?.tracks || []).map(toSong)
-    newKidsSeeds.value = res.data?.seeds || []
-    newKidsPartial.value = Boolean(res.data?.partial)
-    newKidsLoaded.value = true
-  } catch (err) {
-    newKidsError.value = errorText(err)
-  } finally {
-    newKidsLoading.value = false
   }
 }
 
@@ -137,22 +71,8 @@ export function useMixes() {
     dailyLoading,
     dailyLoaded,
     dailyError,
-    newSongs,
-    newSeeds,
-    newPartial,
-    newLoading,
-    newLoaded,
-    newError,
-    newKidsSongs,
-    newKidsSeeds,
-    newKidsPartial,
-    newKidsLoading,
-    newKidsLoaded,
-    newKidsError,
     load,
     loadDaily,
-    loadNew,
-    loadNewKids,
     findMix,
   }
 }

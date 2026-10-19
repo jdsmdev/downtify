@@ -4,7 +4,7 @@ icon: lucide/repeat
 
 # Mixes
 
-**Mixes** are playlists Downtify builds on its own from what you listen to. They follow your listening as it changes: open the page again and they reflect your latest plays. No setup, no account anywhere.
+**Mixes** are playlists Downtify builds on its own from what you listen to. Every day a background job rebuilds them as real [playlists](m3u-export.md#playlists-you-create), one set per account, so they show up in the Library, in Navidrome and in the apps like any other playlist. No setup, no account anywhere.
 
 ## How to use it
 
@@ -25,7 +25,7 @@ The tile shows the first artists in the mix ("Portishead, Massive Attack and mor
 When Deezer can't be reached, artists are still grouped by the genre tags in your files. Tagging genres (or letting [Upgrade library](library-upgrade.md) fill tags in) makes the groups better either way.
 :::
 
-Kids songs are identified by explicit genre tags such as **Children's Music**, **Kids**, **Nursery Rhymes**, **Lullabies** and localized equivalents such as **Música infantil**. Tagged tracks are kept out of regular Daily Mixes, **On repeat**, **Forgotten favourites**, **Never played**, decade mixes and the seeds for **New for you**. The Kids Daily Mix puts played or liked songs first, then adds tagged songs you haven't played yet. Songs without a child-focused genre tag stay in the regular mixes; titles and artist names alone are not used to guess.
+Kids songs are identified by explicit genre tags such as **Children's Music**, **Kids**, **Nursery Rhymes**, **Lullabies** and localized equivalents such as **Música infantil**. Tagged tracks are kept out of regular Daily Mixes, **On repeat**, **Forgotten favourites**, **Never played**, decade mixes. The Kids Daily Mix puts played or liked songs first, then adds tagged songs you haven't played yet. Songs without a child-focused genre tag stay in the regular mixes; titles and artist names alone are not used to guess.
 
 ## Made from your listening
 
@@ -34,10 +34,8 @@ Kids songs are identified by explicit genre tags such as **Children's Music**, *
 | **On repeat** | The songs you've played the most in the last 30 days. Recent plays count the most: a play counts half as much after a week. |
 | **Forgotten favourites** | Songs you played at least three times (or liked and played) but haven't heard in two months, most played first. |
 | **Never played** | Songs in your library you've never played, by the artists you play and like the most, at most three per artist. You get a different pick every day. |
-| **New for you** | Songs that aren't in your library at all, like your current favourites. It uses YouTube Music's radio mix of your top three **On repeat** songs, one per artist. Suggestions must have a known non-kids iTunes genre. Every row plays in full and downloads, just like on [Similar](similar.md). |
-| **New for your kids** | Children's songs not in your library, similar to kids' tracks you play or like. Suggestions must have an iTunes genre identified as children's music; unclassified songs are left out. |
 
-On a library mix, **Save as playlist** turns what's in it right now into a regular [playlist](m3u-export.md#playlists-you-create) you can edit. The mix itself keeps changing, but the saved playlist doesn't.
+On a library mix, **Save as playlist** copies what's in it right now into a regular playlist that tomorrow's rebuild won't touch.
 
 ## Decades
 
@@ -49,12 +47,12 @@ The player counts a song once half of it (or four minutes) has played. Seeking p
 
 Each account has its own mixes, built only from its own listens and likes, over the songs it can see in the library.
 
-::: info Nothing is written to disk
-Mixes are worked out from the listening history each time you open them. They aren't M3U files, so they don't show up in Navidrome or other media servers, and deleting songs never leaves them stale. Use **Save as playlist** to keep a copy.
+::: info Mixes are playlists, rebuilt daily
+The mixes are written as M3U playlists named like **Daily Mix 1 - alice** (the account's name is added because playlist names are shared). The server rebuilds them once a day (UTC), starting shortly after it boots, and **Refresh** on the Mixes page rebuilds yours right away. Each rebuild overwrites the playlist, so edits to a mix don't last; a mix that no longer applies is removed, and deleting an account removes its mixes. Playlists never delete songs, so removing a mix never touches your library.
 :::
 
 To start over, use **Clear listening history** under **Hidden artists** on the [Discover](discover.md) page. It clears the history the mixes are built from too.
 
 ## API
 
-See [`GET /api/mixes`](../api-reference.md#get-apimixes), [`GET /api/mixes/daily`](../api-reference.md#get-apimixesdaily), [`GET /api/mixes/new`](../api-reference.md#get-apimixesnew) and [`GET /api/mixes/new/kids`](../api-reference.md#get-apimixesnewkids) in the API Reference.
+See [`GET /api/mixes`](../api-reference.md#get-apimixes) and [`GET /api/mixes/daily`](../api-reference.md#get-apimixesdaily) in the API Reference.

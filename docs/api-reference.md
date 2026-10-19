@@ -1734,7 +1734,7 @@ Show a hidden artist again.
 
 ## Mixes
 
-Playlists built from what the signed-in user plays — see [Mixes](features/mixes.md). Worked out on every request from the per-song plays [`POST /api/discover/listens`](#post-apidiscoverlistens) logs; nothing is written to disk. Tracks with child-focused genre tags are left out of the regular mixes and grouped in `daily_kids` instead.
+Playlists built from what the signed-in user plays — see [Mixes](features/mixes.md). Each library mix is a manual playlist (`<mix name> - <username>`) that a background job rebuilds once a day (UTC) from the per-song plays [`POST /api/discover/listens`](#post-apidiscoverlistens) logs; these endpoints read those playlists back, building them first when the user has none for today. Add `?refresh=true` to either endpoint to rebuild the user's mixes now. Each mix also carries `playlist`, the name of its playlist (`""` when a fixed mix is empty and has none). Tracks with child-focused genre tags are left out of the regular mixes and grouped in `daily_kids` instead.
 
 ### `GET /api/mixes`
 
@@ -1767,21 +1767,7 @@ After those come the decade mixes (`"id": "decade_1990"`, `"kind": "decade"`, `"
 
 Spotify-style Daily Mixes: the user's favourite non-kids artists grouped by Deezer's related artists (cached with [Discover](#discover)'s) and shared genre tags, each mix about 60% songs the user plays or likes and 40% never-played library songs of the same and similar artists. Up to six, ten songs or more each; a song is only in one. When the library has genre-tagged children's music, `daily_kids` is also returned: played or liked kids' songs first, then unplayed kids' songs. Genre tags such as `Children's Music`, `Kids`, `Nursery Rhymes`, `Lullabies` and localized equivalents identify kids tracks; names and titles alone do not.
 
-**Response:** `{ "mixes": [{ "id": "daily_1", "kind": "daily", "number": 1, "artists": ["Portishead", "Massive Attack"], "tracks": [...] }, { "id": "daily_kids", "kind": "kids", "artists": [], "tracks": [...] }], "partial": false }` — `tracks` in the [`GET /tracks`](#get-tracks) shape; `artists` up to three names to show for regular mixes; `partial` is `true` when Deezer couldn't be asked for some artists (genre tags still group them). Regular mixes need listening or likes; `daily_kids` can appear as soon as the library has genre-tagged kids' songs.
-
----
-
-### `GET /api/mixes/new`
-
-Songs that aren't in the library, like the user's current favourites: YouTube Music's radio mix (see [`GET /api/similar/tracks`](#get-apisimilartracks)) of the top 3 `on_repeat` songs (all-time favourites when nothing was played lately), one per artist, interleaved, library songs left out. iTunes must identify a known genre for each suggestion; kids genres and unknown genres are excluded rather than guessed from title or artist.
-
-**Response:** `{ "seeds": [{ "artist": "Portishead", "title": "Roads" }], "tracks": [...], "partial": false }` — `tracks` are downloadable song rows like `GET /api/similar/tracks`; `partial` is `true` when YouTube Music couldn't answer for a seed or iTunes couldn't classify a candidate's genre. Empty `seeds` and `tracks` until something has been played.
-
----
-
-### `GET /api/mixes/new/kids`
-
-Children's songs not in the library, like the user's played or liked child-focused tracks. Uses YouTube Music's radio mix for up to three kids' seeds, then keeps only suggestions whose iTunes genre is a recognized children/kids genre. This is deliberately strict: an unknown genre is not included. Returns the same `{seeds, tracks, partial}` shape as [`GET /api/mixes/new`](#get-apimixesnew); `partial` is `true` when YouTube Music couldn't answer for a seed or iTunes couldn't classify a candidate. Empty until a tagged kids' track has been played or liked.
+**Response:** `{ "mixes": [{ "id": "daily_1", "kind": "daily", "number": 1, "artists": ["Portishead", "Massive Attack"], "tracks": [...] }, { "id": "daily_kids", "kind": "kids", "artists": [], "tracks": [...] }], "partial": false }` — `tracks` in the [`GET /tracks`](#get-tracks) shape; `artists` up to three names to show for regular mixes; `partial` is always `false` here: the related-artist lookups happen during the daily rebuild. Regular mixes need listening or likes; `daily_kids` can appear as soon as the library has genre-tagged kids' songs.
 
 ---
 

@@ -2,8 +2,8 @@
 
 Every counted listen of a library file is logged per user (see
 :meth:`downtify.discover.DiscoverStore.record_listen`), and the mixes are
-worked out from that log each time they are asked for - nothing is
-written to disk, so they never go stale and never touch the library:
+worked out from that log (:mod:`downtify.mix_playlists` writes them out
+as playlists once a day):
 
 * **On repeat** - what the user has been playing the most lately: plays
   in the last :data:`RECENT_DAYS`, each worth less the older it is
@@ -14,9 +14,6 @@ written to disk, so they never go stale and never touch the library:
 * **Never played** - library songs the user has never played, by the
   artists they listen to (and like) the most; a few per artist, and a
   different pick each day.
-* **New for you** - songs that aren't in the library at all, from
-  YouTube Music's radio mix of the user's current favourites (see
-  :func:`new_for_you`; needs the network).
 * **Daily Mix 1-6** - like Spotify's: the user's favourite artists
   grouped into clusters of similar music (Deezer's related artists, and
   shared genre tags), each mix their most played songs with a share of
@@ -27,9 +24,8 @@ written to disk, so they never go stale and never touch the library:
 * **Decades** - "Your 1990s" and so on: the songs of the decades the
   user listens to the most, by the year tag.
 
-All but "New for you" and "New for your kids" are lists of library rows
-(the ``GET /tracks`` shape), so they play like any playlist; both new-song
-mixes are downloadable song rows, like ``GET /api/similar/tracks``.
+All of them are lists of library rows (the ``GET /tracks`` shape), so
+they play like any playlist.
 """
 
 from __future__ import annotations
@@ -42,10 +38,8 @@ from collections.abc import Callable, Collection, Iterable
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from loguru import logger
-
 from .discover import artist_key
-from .library_catalog import album_artist_of, song_key
+from .library_catalog import album_artist_of
 
 #: Songs per mix, at most.
 MIX_SIZE = 50
@@ -59,10 +53,6 @@ FORGOTTEN_AFTER_DAYS = 60
 FORGOTTEN_MIN_PLAYS = 3
 #: Songs per artist in "Never played", at most.
 UNPLAYED_PER_ARTIST = 3
-#: Favourites "New for you" is seeded from.
-NEW_SEEDS = 3
-#: Similar songs asked for per seed.
-NEW_PER_SEED = 25
 #: Daily Mixes, at most.
 DAILY_MIXES = 6
 #: Favourite artists the Daily Mixes are built around.
@@ -117,10 +107,6 @@ _KIDS_GENRES = frozenset({
     'kindermusik',
 })
 
-#: ``(artist, track) -> {tracks: [...]}``, like
-#: :func:`downtify.providers.youtube_similar_tracks`.
-SimilarFn = Callable[[str, str], dict[str, Any]]
-GenreFn = Callable[[dict[str, Any]], str]
 #: ``names -> ({artist key: related artists}, partial)``, like
 #: :func:`downtify.discover.related_for_artists`.
 RelatedFn = Callable[[list[str]], tuple[dict[str, list[dict[str, Any]]], bool]]
@@ -759,148 +745,3 @@ def _cluster_files(
         used.update(files)
         picked.append((keys, files))
     return picked
-
-
-def new_seeds(
-    entries: list[dict[str, Any]],
-    plays: Iterable[dict[str, Any]],
-    now: Optional[datetime] = None,
-    limit: int = NEW_SEEDS,
-) -> list[dict[str, str]]:
-    """``[{artist, title}]`` to seed "New for you": the top "On repeat"
-    songs (all-time favourites when nothing was played lately), one per
-    artist."""
-
-    entries = _regular_entries(entries)
-    stats = track_stats(plays, now)
-    by_file = {_norm(entry.get('file')): entry for entry in entries}
-    visible = {f: s for f, s in stats.items() if f in by_file}
-    ranked = on_repeat(visible, limit=MIX_SIZE)
-    if not ranked:
-        ranked = sorted(visible, key=lambda f: (-visible[f]['plays'], f))
-    seeds: list[dict[str, str]] = []
-    artists: set[str] = set()
-    for file in ranked:
-        entry = by_file[file]
-        artist = str(entry.get('artist') or '').split(';')[0].strip()
-        title = str(entry.get('title') or '').strip()
-        if not artist or not title or artist.casefold() in artists:
-            continue
-        artists.add(artist.casefold())
-        seeds.append({'artist': artist, 'title': title})
-        if len(seeds) >= limit:
-            break
-    return seeds
-
-
-def new_kids_seeds(
-    entries: list[dict[str, Any]],
-    plays: Iterable[dict[str, Any]],
-    liked: Collection[str],
-    now: Optional[datetime] = None,
-    limit: int = NEW_SEEDS,
-) -> list[dict[str, str]]:
-    """The most-played or liked kids' tracks, one seed per artist."""
-
-    kids_entries = [entry for entry in entries if is_kids_track(entry)]
-    stats = track_stats(plays, now)
-    liked_set = {_norm(path) for path in liked}
-    ranked: list[tuple[float, str, str, str]] = []
-    for entry in kids_entries:
-        file = _norm(entry.get('file'))
-        entry_stats = stats.get(file)
-        if not file or (entry_stats is None and file not in liked_set):
-            continue
-        plays_count = int((entry_stats or {}).get('plays') or 0)
-        recent = float((entry_stats or {}).get('recent') or 0.0)
-        score = (
-            recent
-            + math.log1p(plays_count)
-            + (3.0 if file in liked_set else 0.0)
-        )
-        artist = str(entry.get('artist') or '').split(';')[0].strip()
-        title = str(entry.get('title') or '').strip()
-        if artist and title:
-            ranked.append((score, artist.casefold(), artist, title))
-    ranked.sort(key=lambda row: (-row[0], row[1], row[3].casefold()))
-    seeds: list[dict[str, str]] = []
-    artists: set[str] = set()
-    for _score, artist_key_value, artist, title in ranked:
-        if artist_key_value in artists:
-            continue
-        artists.add(artist_key_value)
-        seeds.append({'artist': artist, 'title': title})
-        if len(seeds) >= limit:
-            break
-    return seeds
-
-
-def _song_key_of(song: dict[str, Any]) -> str:
-    artists = song.get('artists')
-    artist = (
-        str(artists[0] or '')
-        if isinstance(artists, list) and artists
-        else str(song.get('artist') or '')
-    )
-    return song_key(artist, str(song.get('name') or song.get('title') or ''))
-
-
-def new_for_you(
-    seeds: list[dict[str, str]],
-    entries: Iterable[dict[str, Any]],
-    similar: SimilarFn,
-    limit: int = MIX_SIZE,
-    *,
-    genre_for: Optional[GenreFn] = None,
-    kids_only: bool = False,
-) -> dict[str, Any]:
-    """Songs like the *seeds* that aren't in the library.
-
-    Each seed's similar songs are interleaved, so every favourite gets a
-    say near the top; library songs and repeats are dropped. When
-    *genre_for* is supplied, regular suggestions must have a known
-    non-kids genre; *kids_only* keeps only known child-focused genres.
-    Unknown genres aren't guessed from titles or artists.
-    A seed YouTube can't answer for is skipped (``partial`` says so).
-    """
-
-    owned = {
-        song_key(str(e.get('artist') or ''), str(e.get('title') or ''))
-        for e in entries
-    }
-    lists: list[list[dict[str, Any]]] = []
-    partial = False
-    for seed in seeds:
-        try:
-            answer = similar(seed['artist'], seed['title'])
-        except ValueError as exc:
-            logger.debug('New for you: no mix for {}: {}', seed, exc)
-            partial = True
-            continue
-        lists.append(list(answer.get('tracks') or []))
-
-    tracks: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for position in range(max((len(songs) for songs in lists), default=0)):
-        for songs in lists:
-            if position >= len(songs):
-                continue
-            song = songs[position]
-            key = _song_key_of(song)
-            if key == '|' or key in owned or key in seen:
-                continue
-            if genre_for is not None:
-                genre = str(genre_for(song) or '').strip()
-                if not genre:
-                    partial = True
-                    continue
-                child_focused = is_kids_genre(genre)
-                if child_focused != kids_only:
-                    continue
-            elif kids_only:
-                continue
-            seen.add(key)
-            tracks.append(song)
-            if len(tracks) >= limit:
-                return {'seeds': seeds, 'tracks': tracks, 'partial': partial}
-    return {'seeds': seeds, 'tracks': tracks, 'partial': partial}

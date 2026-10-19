@@ -1314,16 +1314,9 @@ export default {
       'A song counts as played once half of it (or four minutes) has played. Your mixes are yours alone.',
     saveAsPlaylist: 'Save as playlist',
     emptyTitle: 'Nothing here yet',
-    newBecause: 'Because you’ve been playing {names}',
     kids: {
       title: 'Kids Daily Mix',
       body: 'A fresh daily mix of children’s music in your library, led by songs played or liked and filled with tracks you haven’t played yet.',
-    },
-    new_kids: {
-      title: 'New for your kids',
-      short: 'Children’s songs not in your library yet',
-      body: 'Children’s songs similar to the kids’ tracks you play or like, checked against music genres.',
-      empty: 'Play or like a tagged children’s song first. Suggestions are limited to songs identified as children’s music.',
     },
     dailyTitle: 'Your Daily Mixes',
     dailyBody:
@@ -1361,13 +1354,6 @@ export default {
       short: 'Library songs you haven’t heard yet',
       body: 'Songs in your library you’ve never played, from the artists you play the most. A new pick every day.',
       empty: 'You’ve played every song in your library.',
-    },
-    new: {
-      title: 'New for you',
-      short: 'Songs not in your library yet',
-      body: 'Songs you don’t have yet, like the ones you play the most, from YouTube Music.',
-      empty:
-        'Play some songs from your library first: this mix is built from your favourites.',
     },
   },
   podcasts: {

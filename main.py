@@ -75,6 +75,7 @@ from downtify.library_upgrade_db import LibraryUpgradeDB
 from downtify.likes import LikedTracks
 from downtify.lyrics import read_track_lyrics
 from downtify.lyrics_cache import LyricsLookupCache
+from downtify.mix_playlists import MixPlaylistStore, mix_playlist_loop
 from downtify.monitor import PlaylistMonitorDB, monitor_loop, reconcile_loop
 from downtify.navidrome_index import NavidromeIndex
 from downtify.playlist_batches import PlaylistBatchStore, ensure_batch_records
@@ -340,6 +341,7 @@ def _open_library_stores(monitor_db_path: Path) -> None:
     set_listing_refresh_gate(_downloads_using_disk)
     api.state.playlist_catalog = PlaylistCatalog(library_db)
     api.state.manual_playlist_owners = ManualPlaylistOwners(library_db)
+    api.state.mix_store = MixPlaylistStore(library_db)
     api.state.playlist_batch_store = PlaylistBatchStore(library_db)
     api.state.playlist_spotify_cache = PlaylistSpotifyCache(library_db)
     api.state.lyrics_cache = LyricsLookupCache(library_db)
@@ -497,6 +499,11 @@ def build_app() -> FastAPI:
                 get_podcasts=lambda: api.state.podcasts,
             ),
             name='monitor-loop',
+        )
+        # Mixes are playlists, rebuilt once a day per user.
+        api.spawn_task(
+            mix_playlist_loop(api.generate_due_mix_playlists),
+            name='mix-playlist-loop',
         )
         # Separate hourly sweep that forgets a downloaded-track record once
         # its file is gone from the downloads directory — see

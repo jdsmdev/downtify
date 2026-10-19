@@ -20,7 +20,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from loguru import logger
 
-from . import api
+from . import api, mix_playlists
 from .activity import KINDS, clean_track, track_label
 from .auth import SESSION_COOKIE, AuthStore, Principal, session_cookie
 from .library_catalog import entry_content_key, listing_for_request
@@ -403,6 +403,13 @@ def _forget_user_library(user_id: int) -> None:
             api.state.track_owners.remove_user(user_id)
         if api.state.likes is not None:
             api.state.likes.remove_user(user_id)
+        if api.state.mix_store is not None:
+            mix_playlists.remove_user_mixes(
+                api.library_context(),
+                api.state.mix_store,
+                api.state.manual_playlist_owners,
+                user_id,
+            )
         if api.state.manual_playlist_owners is not None:
             api.state.manual_playlist_owners.remove_user(user_id)
         if api.state.podcasts is not None:

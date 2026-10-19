@@ -1347,16 +1347,9 @@ export default {
       'Egy dal akkor számít meghallgatottnak, ha a fele (vagy négy perc) lejátszódott. A mixeidet csak te látod.',
     saveAsPlaylist: 'Mentés lejátszási listaként',
     emptyTitle: 'Még nincs itt semmi',
-    newBecause: 'Mert mostanában ezeket hallgatod: {names}',
     kids: {
       title: 'Napi gyerekzene mix',
       body: 'Napi válogatás a könyvtárad gyerekzenéiből: kedvenceid és olyan dalok, amelyeket még nem hallottál.',
-    },
-    new_kids: {
-      title: 'Újdonságok gyerekeknek',
-      short: 'Gyerekdalok, amelyek még nincsenek meg',
-      body: 'A gyerekek általad hallgatott vagy kedvelt dalaihoz hasonló, műfaj alapján ellenőrzött zenék.',
-      empty: 'Előbb hallgass vagy kedvelj egy műfajcímkével ellátott gyerekdalt. Csak gyerekzeneként azonosított dalok jelennek meg.',
     },
     dailyTitle: 'Napi mixeid',
     dailyBody:
@@ -1394,13 +1387,6 @@ export default {
       short: 'Könyvtárbeli dalok, amiket még nem hallottál',
       body: 'A könyvtáradban lévő, még sosem hallgatott dalok a legtöbbet hallgatott előadóidtól. Minden nap új válogatás.',
       empty: 'A könyvtárad minden dalát meghallgattad már.',
-    },
-    new: {
-      title: 'Újdonságok neked',
-      short: 'Dalok, amik még nincsenek a könyvtáradban',
-      body: 'Dalok, amik még nincsenek meg, hasonlók a legtöbbet hallgatottakhoz, a YouTube Musicról.',
-      empty:
-        'Előbb hallgass dalokat a könyvtáradból: ez a mix a kedvenceidből indul.',
     },
   },
   podcasts: {
