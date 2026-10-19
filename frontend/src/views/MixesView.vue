@@ -90,7 +90,7 @@
             @click="playCard(card, { shuffled: true })"
           />
           <UiButton
-            v-if="card.library && card.tracks.length"
+            v-if="card.tracks.length"
             variant="secondary"
             icon="plus"
             @click="playlistActions.openCreate(card.tracks)"
@@ -111,66 +111,17 @@
       <div
         class="mx-auto flex max-w-[1680px] flex-col gap-6 px-4 pb-10 sm:px-6 lg:px-10"
       >
-        <template v-if="card.library">
-          <TrackList
-            v-if="card.tracks.length"
-            :tracks="card.tracks"
-            :context="contextFor(card)"
-          />
-          <UiEmpty
-            v-else-if="store.loaded.value"
-            :icon="card.icon"
-            :title="t('mixes.emptyTitle')"
-            :body="card.empty"
-          />
-        </template>
-
-        <template v-else>
-          <div v-if="cardLoading" class="flex flex-col gap-2">
-            <div
-              v-for="n in 6"
-              :key="n"
-              class="flex h-16 items-center gap-3 px-3"
-            >
-              <UiSkeleton class="size-11 !rounded-[8px]" />
-              <div class="flex flex-1 flex-col gap-2">
-                <UiSkeleton class="h-3.5 w-1/3" />
-                <UiSkeleton class="h-3 w-1/5" />
-              </div>
-            </div>
-          </div>
-          <UiEmpty
-            v-else-if="cardError"
-            icon="alert"
-            :title="t('mixes.failed')"
-            :body="cardError"
-          >
-            <UiButton icon="refresh" @click="refreshFor(card)">
-              {{ t('common.retry') }}
-            </UiButton>
-          </UiEmpty>
-          <UiEmpty
-            v-else-if="cardLoaded && !cardSongs.length"
-            icon="wand"
-            :title="t('mixes.emptyTitle')"
-            :body="card.empty"
-          />
-          <template v-else-if="store.newSongs.value.length">
-            <p v-if="cardSeedNames" class="text-[13px] text-muted">
-              {{ t('mixes.newBecause', { names: cardSeedNames }) }}
-            </p>
-            <div class="-mx-3 flex flex-col">
-              <TrackDownPlayHeader />
-              <SimilarTrackRow
-                v-for="(song, i) in cardSongs"
-                :key="`${song.artist}|${song.name}`"
-                :song="song"
-                :index="i"
-                :songs="cardSongs"
-              />
-            </div>
-          </template>
-        </template>
+        <TrackList
+          v-if="card.tracks.length"
+          :tracks="card.tracks"
+          :context="contextFor(card)"
+        />
+        <UiEmpty
+          v-else-if="store.loaded.value"
+          :icon="card.icon"
+          :title="t('mixes.emptyTitle')"
+          :body="card.empty"
+        />
       </div>
     </template>
   </div>
@@ -189,25 +140,19 @@ import CollectionHero from '/src/components/library/CollectionHero.vue'
 import MediaTile from '/src/components/library/MediaTile.vue'
 import PageHeader from '/src/components/library/PageHeader.vue'
 import PlayButton from '/src/components/library/PlayButton.vue'
-import TrackDownPlayHeader from '/src/components/library/TrackDownPlayHeader.vue'
 import TrackList from '/src/components/library/TrackList.vue'
-import SimilarTrackRow from '/src/components/similar/SimilarTrackRow.vue'
-import { useLibrary } from '/src/model/library'
 import { useMixes } from '/src/model/mixes'
 import { usePlayer } from '/src/model/player'
 import { usePlaylistActions } from '/src/model/playlistActions'
-import { songToPlayerTrack } from '/src/model/songPlay'
 import { useTrackActions } from '/src/model/trackActions'
-import { joinNames } from '/src/lib/discover'
 import { useI18n } from '/src/i18n'
 
 const GRID =
   'grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const route = useRoute()
 const store = useMixes()
-const library = useLibrary()
 const player = usePlayer()
 const actions = useTrackActions()
 const playlistActions = usePlaylistActions()
@@ -216,8 +161,6 @@ const ICONS = {
   on_repeat: 'repeat',
   forgotten: 'clock',
   unplayed: 'sparkle',
-  new: 'wand',
-  new_kids: 'wand',
   daily: 'music',
   kids: 'music',
   decade: 'disc',
@@ -245,9 +188,8 @@ function describe(mix) {
   const base = {
     ...mix,
     kind,
-    library: !['new', 'new_kids'].includes(kind),
     icon: ICONS[kind] || 'playlist',
-    covers: mix.covers || libraryCovers(mix.tracks),
+    covers: libraryCovers(mix.tracks),
     empty: '',
   }
   if (kind === 'daily') {
@@ -265,15 +207,6 @@ function describe(mix) {
       title: t('mixes.kids.title'),
       subtitle: tracks,
       body: t('mixes.kids.body'),
-    }
-  }
-  if (kind === 'new_kids') {
-    return {
-      ...base,
-      title: t('mixes.new_kids.title'),
-      subtitle: tracks || t('mixes.new_kids.short'),
-      body: t('mixes.new_kids.body'),
-      empty: t('mixes.new_kids.empty'),
     }
   }
   if (kind === 'decade') {
@@ -299,25 +232,9 @@ const dailyCards = computed(() => store.daily.value.map(describe))
 const decadeCards = computed(() =>
   store.mixes.value.filter((mix) => mix.kind === 'decade').map(describe)
 )
-const ownCards = computed(() => {
-  const own = store.mixes.value.filter((mix) => mix.kind !== 'decade')
-  const songs = store.newSongs.value
-  const newCovers = songs.map((song) => song.cover_url).filter(Boolean)
-  own.push({
-    id: 'new',
-    tracks: songs,
-    covers: [...new Set(newCovers)].slice(0, 4),
-  })
-  const kidsSongs = store.newKidsSongs.value
-  const kidsCovers = kidsSongs.map((song) => song.cover_url).filter(Boolean)
-  own.push({
-    id: 'new_kids',
-    kind: 'new_kids',
-    tracks: kidsSongs,
-    covers: [...new Set(kidsCovers)].slice(0, 4),
-  })
-  return own.map(describe)
-})
+const ownCards = computed(() =>
+  store.mixes.value.filter((mix) => mix.kind !== 'decade').map(describe)
+)
 const cards = computed(() => [
   ...dailyCards.value,
   ...ownCards.value,
@@ -367,41 +284,7 @@ const card = computed(() =>
 
 const playableCount = computed(() => card.value?.tracks.length || 0)
 
-const cardSongs = computed(() =>
-  card.value?.kind === 'new_kids'
-    ? store.newKidsSongs.value
-    : store.newSongs.value
-)
-const cardLoading = computed(() =>
-  card.value?.kind === 'new_kids'
-    ? store.newKidsLoading.value
-    : store.newLoading.value
-)
-const cardLoaded = computed(() =>
-  card.value?.kind === 'new_kids'
-    ? store.newKidsLoaded.value
-    : store.newLoaded.value
-)
-const cardError = computed(() =>
-  card.value?.kind === 'new_kids'
-    ? store.newKidsError.value
-    : store.newError.value
-)
-const cardSeedNames = computed(() => {
-  const seeds =
-    card.value?.kind === 'new_kids'
-      ? store.newKidsSeeds.value
-      : store.newSeeds.value
-  return joinNames(seeds.map((seed) => seed.artist), locale.value)
-})
-
-const anyLoading = computed(
-  () =>
-    store.loading.value ||
-    store.dailyLoading.value ||
-    store.newLoading.value ||
-    store.newKidsLoading.value
-)
+const anyLoading = computed(() => store.loading.value || store.dailyLoading.value)
 
 function contextFor(item) {
   return {
@@ -421,10 +304,7 @@ function isPlaying(item) {
 }
 
 function playCard(item, options = {}) {
-  const tracks = item.library
-    ? item.tracks
-    : item.tracks.map((song) => songToPlayerTrack(song, library.findTrack))
-  actions.play(tracks, 0, contextFor(item), options)
+  actions.play(item.tracks, 0, contextFor(item), options)
 }
 
 function togglePlay() {
@@ -433,34 +313,24 @@ function togglePlay() {
 }
 
 function loadingFor(item) {
-  if (item.kind === 'new') return store.newLoading.value
-  if (item.kind === 'new_kids') return store.newKidsLoading.value
   if (item.kind === 'daily') return store.dailyLoading.value
   return store.loading.value
 }
 
 function refreshFor(item) {
-  if (item.kind === 'new') store.loadNew()
-  else if (item.kind === 'new_kids') store.loadNewKids()
-  else if (item.kind === 'daily') store.loadDaily()
-  else store.load()
+  if (item.kind === 'daily') store.loadDaily(true)
+  else store.load(true)
 }
 
+// Rebuilding the playlists is one job, so the Daily Mixes wait for it.
 function refreshAll() {
-  store.load()
-  store.loadDaily()
-  store.loadNew()
-  store.loadNewKids()
+  store.load(true).then(() => store.loadDaily())
 }
 
 onMounted(() => {
   if (!store.loaded.value) store.load()
   if (!store.dailyLoaded.value && !store.dailyLoading.value) {
     store.loadDaily()
-  }
-  if (!store.newLoaded.value && !store.newLoading.value) store.loadNew()
-  if (!store.newKidsLoaded.value && !store.newKidsLoading.value) {
-    store.loadNewKids()
   }
 })
 

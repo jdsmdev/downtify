@@ -1348,16 +1348,9 @@ export default {
       'Una canción cuenta como escuchada cuando ha sonado la mitad (o cuatro minutos). Tus mixes son solo tuyos.',
     saveAsPlaylist: 'Guardar como lista',
     emptyTitle: 'Aún no hay nada',
-    newBecause: 'Porque has estado escuchando {names}',
     kids: {
       title: 'Mix infantil diario',
       body: 'Una selección diaria de música infantil de tu biblioteca: tus canciones favoritas y otras que aún no has escuchado.',
-    },
-    new_kids: {
-      title: 'Novedades para tus peques',
-      short: 'Canciones infantiles que aún no tienes',
-      body: 'Canciones infantiles parecidas a las que escuchas o marcas como favoritas, verificadas por género musical.',
-      empty: 'Escucha o marca como favorita una canción infantil etiquetada. Solo se muestran canciones identificadas como música infantil.',
     },
     dailyTitle: 'Tus Daily Mix',
     dailyBody:
@@ -1395,13 +1388,6 @@ export default {
       short: 'Canciones de tu biblioteca aún sin escuchar',
       body: 'Canciones de tu biblioteca que nunca has escuchado, de los artistas que más escuchas. Una selección nueva cada día.',
       empty: 'Has escuchado todas las canciones de tu biblioteca.',
-    },
-    new: {
-      title: 'Novedades para ti',
-      short: 'Canciones que aún no tienes',
-      body: 'Canciones que aún no tienes, parecidas a las que más escuchas, de YouTube Music.',
-      empty:
-        'Escucha primero algunas canciones de tu biblioteca: este mix se basa en tus favoritas.',
     },
   },
   podcasts: {

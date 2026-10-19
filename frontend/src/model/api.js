@@ -604,21 +604,16 @@ function recordListen(artist, file = '') {
   return API.post('/api/discover/listens', file ? { artist, file } : { artist })
 }
 
-// Playlists built from what the user plays - see downtify/mixes.py.
-function getMixes() {
-  return API.get('/api/mixes')
+// Mixes are playlists the server rebuilds daily - see downtify/mix_playlists.py.
+function getMixes(refresh = false) {
+  return API.get('/api/mixes', refresh ? { params: { refresh: true } } : {})
 }
 
-function getNewForYou() {
-  return API.get('/api/mixes/new')
-}
-
-function getNewForKids() {
-  return API.get('/api/mixes/new/kids')
-}
-
-function getDailyMixes() {
-  return API.get('/api/mixes/daily')
+function getDailyMixes(refresh = false) {
+  return API.get(
+    '/api/mixes/daily',
+    refresh ? { params: { refresh: true } } : {}
+  )
 }
 
 function clearListens() {
@@ -884,8 +879,6 @@ export default {
   findPreview,
   recordListen,
   getMixes,
-  getNewForYou,
-  getNewForKids,
   getDailyMixes,
   clearListens,
   getBlockedArtists,

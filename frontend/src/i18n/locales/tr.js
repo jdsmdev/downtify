@@ -1342,16 +1342,9 @@ export default {
       'Bir şarkının yarısı (ya da dört dakikası) çaldığında dinlenmiş sayılır. Mixlerini yalnızca sen görürsün.',
     saveAsPlaylist: 'Çalma listesi olarak kaydet',
     emptyTitle: 'Burada henüz bir şey yok',
-    newBecause: 'Son zamanlarda {names} dinlediğin için',
     kids: {
       title: 'Günlük çocuk müzikleri mixi',
       body: 'Kitaplığındaki çocuk şarkılarından günlük bir seçki: sevdiklerin ve henüz dinlemediklerin.',
-    },
-    new_kids: {
-      title: 'Çocuklar için yeni',
-      short: 'Kitaplığında olmayan çocuk şarkıları',
-      body: 'Dinlediğin veya beğendiğin çocuk şarkılarına benzer, tür bilgisiyle doğrulanmış şarkılar.',
-      empty: 'Önce tür etiketi olan bir çocuk şarkısı dinle veya beğen. Yalnızca çocuk müziği olarak tanımlananlar önerilir.',
     },
     dailyTitle: 'Günlük mixlerin',
     dailyBody:
@@ -1388,13 +1381,6 @@ export default {
       short: 'Kitaplığında henüz dinlemediğin şarkılar',
       body: 'Kitaplığında hiç dinlemediğin, en çok dinlediğin sanatçılardan şarkılar. Her gün yeni bir seçki.',
       empty: 'Kitaplığındaki her şarkıyı dinledin.',
-    },
-    new: {
-      title: 'Senin için yeni',
-      short: 'Henüz kitaplığında olmayan şarkılar',
-      body: 'Henüz sende olmayan, en çok dinlediklerine benzeyen şarkılar, YouTube Music’ten.',
-      empty:
-        'Önce kitaplığından birkaç şarkı dinle: bu mix favorilerinden oluşturulur.',
     },
   },
   podcasts: {

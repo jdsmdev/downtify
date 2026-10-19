@@ -249,10 +249,10 @@ for downloads stay shared, and files are never stored twice.
   ``unplayed``, then ``decade_<year>`` (``kind`` ``decade``, plus
   ``decade``), tracks in the ``GET /tracks`` shape), ``GET
   /api/mixes/daily`` (Spotify-style Daily Mixes - ``{mixes: [{id, kind,
-    number, artists, tracks}], partial}``), ``GET /api/mixes/new`` (non-kids
-    songs like the user's current favourites), and ``GET
-    /api/mixes/new/kids`` (children's songs like their kids' favourites,
-    verified by genre) - see ``downtify.mixes``
+    number, artists, tracks}], partial}``) - both read each user's mix
+    playlists, rebuilt daily in the background (``?refresh=true`` rebuilds
+    now; each mix also names its ``playlist``) - see ``downtify.mixes``
+    and ``downtify.mix_playlists``
  * ``GET  /api/preview`` (a song's 30 s preview clip from Deezer, for a
    song with no ``preview_url`` of its own - ``?artist=&title=&duration=``,
    response ``{preview_url}``, ``""`` when Deezer has no matching song)
@@ -335,11 +335,11 @@ from . import (
     cover_sources,
     deezer,
     integration_check,
-    itunes,
     library_import,
     library_upgrade,
     lyrics,
     m3u,
+    mix_playlists,
     mixes,
     providers,
     spotify,
@@ -1029,6 +1029,7 @@ class AppState:
     likes: Optional[LikedTracks] = None
     track_owners: Optional[TrackOwners] = None
     manual_playlist_owners: Optional[ManualPlaylistOwners] = None
+    mix_store: Optional[mix_playlists.MixPlaylistStore] = None
     traffic: Optional[TrafficCounters] = None
     podcasts: Optional[PodcastStore] = None
     discover: Optional[DiscoverStore] = None
@@ -7049,13 +7050,112 @@ def _mix_likes(user_id: int) -> list[str]:
     return state.likes.paths(user_id) if state.likes is not None else []
 
 
+def _mix_users() -> list[tuple[int, str, bool]]:
+    """``(id, username, is admin)`` of everyone who gets mixes."""
+
+    users = state.auth.users if state.auth is not None else None
+    rows = users.list() if users is not None else []
+    if not rows:
+        return [(0, '', True)]
+    return [
+        (int(u['id']), str(u['username']), u.get('role') == 'admin')
+        for u in rows
+    ]
+
+
+_mix_build_lock = threading.Lock()
+
+
+def generate_mix_playlists(
+    user_id: int, username: str, is_admin: bool, *, force: bool = False
+) -> bool:
+    """Rebuild a user's mix playlists unless they're already today's.
+
+    Returns whether it rebuilt them.
+    """
+
+    with _mix_build_lock:
+        return _generate_mix_playlists(user_id, username, is_admin, force)
+
+
+def _generate_mix_playlists(
+    user_id: int, username: str, is_admin: bool, force: bool
+) -> bool:
+    store, discover = state.mix_store, state.discover
+    if store is None or discover is None:
+        return False
+    if not force and store.generated_on(user_id) == mix_playlists.today():
+        return False
+    ctx = library_context()
+    allowed = None
+    if not is_admin and state.track_owners is not None:
+        allowed = state.track_owners.owned_keys(user_id)
+    entries = listing_for_request(ctx, allowed_keys=allowed)
+    mix_playlists.generate_user_mixes(
+        ctx,
+        store,
+        state.manual_playlist_owners,
+        user_id=user_id,
+        username=username,
+        entries=entries,
+        plays=discover.track_plays(user_id),
+        liked=_mix_likes(user_id),
+        related_for=lambda names: related_for_artists(discover, names),
+    )
+    return True
+
+
+def generate_due_mix_playlists() -> int:
+    """Rebuild the mixes of every user not done today (one failing user
+    doesn't stop the rest). Returns how many were rebuilt."""
+
+    rebuilt = 0
+    for user_id, username, is_admin in _mix_users():
+        try:
+            rebuilt += generate_mix_playlists(user_id, username, is_admin)
+        except Exception:
+            logger.opt(exception=True).warning(
+                'Could not build the mixes of user {}', user_id
+            )
+    return rebuilt
+
+
+def _mixes_from_playlists(
+    request: Request, refresh: bool
+) -> Optional[list[dict[str, Any]]]:
+    """The requester's mixes as read from their playlists (built now when
+    they have none yet or *refresh*); ``None`` without the store."""
+
+    store = state.mix_store
+    if store is None or state.discover is None:
+        return None
+    user_id = request_user_id(request)
+    who = next(
+        (u for u in _mix_users() if u[0] == user_id),
+        (user_id, '', request_is_admin(request)),
+    )
+    generate_mix_playlists(*who, force=refresh)
+    entries = listing_for_request(
+        library_context(), allowed_keys=allowed_entry_keys(request)
+    )
+    return mix_playlists.stored_mixes(
+        library_context(), store, user_id, entries
+    )
+
+
 @router.get('/api/mixes')
-async def mixes_endpoint(request: Request) -> dict[str, Any]:
+async def mixes_endpoint(
+    request: Request, refresh: bool = False
+) -> dict[str, Any]:
     """Playlists built from what the user plays (see ``downtify.mixes``):
     ``on_repeat``, ``forgotten`` and ``unplayed``, then decade mixes,
-    each ``{id, kind, tracks}`` with library rows. Worked out on every
-    request, so they always follow the latest listens."""
+    each ``{id, kind, playlist, tracks}`` with library rows. They are the
+    user's playlists of the same name, rebuilt once a day; ``refresh``
+    rebuilds them now."""
 
+    stored = await asyncio.to_thread(_mixes_from_playlists, request, refresh)
+    if stored is not None:
+        return {'mixes': mix_playlists.library_shelf(stored)}
     entries, plays, user_id = await asyncio.to_thread(_mix_inputs, request)
     liked = await asyncio.to_thread(_mix_likes, user_id)
     built = await asyncio.to_thread(mixes.build_mixes, entries, plays, liked)
@@ -7063,12 +7163,18 @@ async def mixes_endpoint(request: Request) -> dict[str, Any]:
 
 
 @router.get('/api/mixes/daily')
-async def daily_mixes_endpoint(request: Request) -> dict[str, Any]:
+async def daily_mixes_endpoint(
+    request: Request, refresh: bool = False
+) -> dict[str, Any]:
     """Spotify-style Daily Mixes (see ``downtify.mixes.daily_mixes``):
-    ``{mixes: [{id, kind, number, artists, tracks}], partial}``. A
-    ``daily_kids`` mix also appears when child-focused genre tags exist,
-    even before the user has any listening history."""
+    ``{mixes: [{id, kind, number, artists, playlist, tracks}], partial}``.
+    A ``daily_kids`` mix also appears when child-focused genre tags
+    exist, even before the user has any listening history. Read from
+    the user's playlists like :func:`mixes_endpoint`."""
 
+    stored = await asyncio.to_thread(_mixes_from_playlists, request, refresh)
+    if stored is not None:
+        return {'mixes': mix_playlists.daily_shelf(stored), 'partial': False}
     store = _require_discover()
     entries, plays, user_id = await asyncio.to_thread(_mix_inputs, request)
     liked = await asyncio.to_thread(_mix_likes, user_id)
@@ -7080,57 +7186,6 @@ async def daily_mixes_endpoint(request: Request) -> dict[str, Any]:
 
     return await asyncio.to_thread(
         mixes.daily_mixes, entries, plays, liked, related_for
-    )
-
-
-@router.get('/api/mixes/new')
-async def new_for_you_endpoint(request: Request) -> dict[str, Any]:
-    """Non-kids songs like the user's current favourites. YouTube Music's
-    radio mix of the top "On repeat" songs; iTunes-classified kids tracks
-    are excluded. Unknown genres aren't guessed from title or artist."""
-
-    entries, plays, _user_id = await asyncio.to_thread(_mix_inputs, request)
-    seeds = mixes.new_seeds(entries, plays)
-    if not seeds:
-        return {'seeds': [], 'tracks': [], 'partial': False}
-
-    def similar(artist: str, title: str) -> dict[str, Any]:
-        return providers.youtube_similar_tracks(
-            artist, title, limit=mixes.NEW_PER_SEED
-        )
-
-    return await asyncio.to_thread(
-        mixes.new_for_you,
-        seeds,
-        entries,
-        similar,
-        genre_for=itunes.fetch_genre,
-    )
-
-
-@router.get('/api/mixes/new/kids')
-async def new_for_kids_endpoint(request: Request) -> dict[str, Any]:
-    """Children's songs like the user's played or liked library kids'
-    tracks. Only radio results with a child-focused iTunes genre are kept."""
-
-    entries, plays, user_id = await asyncio.to_thread(_mix_inputs, request)
-    liked = await asyncio.to_thread(_mix_likes, user_id)
-    seeds = mixes.new_kids_seeds(entries, plays, liked)
-    if not seeds:
-        return {'seeds': [], 'tracks': [], 'partial': False}
-
-    def similar(artist: str, title: str) -> dict[str, Any]:
-        return providers.youtube_similar_tracks(
-            artist, title, limit=mixes.NEW_PER_SEED
-        )
-
-    return await asyncio.to_thread(
-        mixes.new_for_you,
-        seeds,
-        entries,
-        similar,
-        genre_for=itunes.fetch_genre,
-        kids_only=True,
     )
 
 

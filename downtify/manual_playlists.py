@@ -107,6 +107,26 @@ def create_manual_playlist(ctx: LibraryContext, name: str) -> dict[str, Any]:
     }
 
 
+def write_generated_playlist(
+    ctx: LibraryContext, name: str, files: list[str]
+) -> str:
+    """Create or overwrite a manual playlist with exactly *files*.
+
+    For playlists Downtify keeps up to date itself (see
+    :mod:`downtify.mix_playlists`). Returns the playlist's name.
+    """
+
+    safe = _validated_name(name)
+    return _write(ctx, files, m3u.m3u_path_for(ctx.download_dir, safe)).stem
+
+
+def read_playlist_files(ctx: LibraryContext, name: str) -> Optional[list[str]]:
+    """The files of the playlist called *name* (``None``: it's gone)."""
+
+    path = m3u.find_m3u_for_name(ctx.download_dir, name)
+    return None if path is None else _read_files(ctx, path)
+
+
 def edit_manual_playlist(
     ctx: LibraryContext,
     name: str,
